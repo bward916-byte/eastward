@@ -133,6 +133,8 @@ export class DemoMode {
   async start() {
     if (this.active) return;
     this.d.log?.('demo start');
+    // capture LIVE state — exit resumes exactly here, nothing lost
+    this._resume = this.d.buildResumeSnapshot();
     this.d.saveManager.suspended = true;
     this.active = true;
     this.uiEl.hidden = false;
@@ -192,7 +194,13 @@ export class DemoMode {
     this.active = false;
     this.uiEl.hidden = true;
     this.captionEl.classList.remove('visible');
-    this.d.saveManager.suspended = false;
-    await this.d.restoreLastCheckpoint();
+    // restore FIRST — un-suspending before the async restore let mid-restore
+    // ticks save aged demo state at nearby checkpoints (the age-persist bug)
+    try {
+      await this.d.restoreResume(this._resume);
+    } finally {
+      this.d.saveManager.suspended = false;
+    }
+    this._resume = null;
   }
 }

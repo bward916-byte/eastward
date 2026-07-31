@@ -395,8 +395,13 @@ async function boot() {
     player, classes, weather, dayNight, dialogue, saveManager,
     log: dbg,
     transitionTo,
-    restoreLastCheckpoint: async () => {
-      const s = saveManager.load();
+    buildResumeSnapshot: () => {
+      const snap = saveManager.buildSnapshot(saveManager.lastCheckpointId);
+      snap.world = saveManager.getWorldState?.() ?? {};
+      return snap;
+    },
+    restoreResume: async (resume) => {
+      const s = resume ?? saveManager.load();
       if (s) await restoreFromSnapshot(s);
       else await loadScene('intro', 60);
     },

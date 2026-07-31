@@ -32,12 +32,9 @@ export class SaveManager {
 
   setBiome(id) { this.biomeId = id; }
 
-  saveAtCheckpoint(checkpointId) {
-    if (this.suspended) return;                          // demo mode
-    if (checkpointId === this.lastCheckpointId) return; // no re-fire on linger
-    this.lastCheckpointId = checkpointId;
-
-    const snapshot = {
+  /** Build a snapshot of live state without writing it anywhere. */
+  buildSnapshot(checkpointId) {
+    return {
       version: SCHEMA_VERSION,
       checkpointId,
       biome: this.biomeId,
@@ -62,9 +59,15 @@ export class SaveManager {
         injuries: this.player.injuries.map(i => i.kind),
       },
       // Reserved for later phases (schema stability — Amendment 01 §A.4):
-      // health/injuries/sickness (§12), inventory, equipment, skills, class,
-      // ageTime, companions, mount, worldFlags
+      // companions, mount
     };
+  }
+
+  saveAtCheckpoint(checkpointId) {
+    if (this.suspended) return;                          // demo/restore guard
+    if (checkpointId === this.lastCheckpointId) return; // no re-fire on linger
+    this.lastCheckpointId = checkpointId;
+    const snapshot = this.buildSnapshot(checkpointId);
     try {
       localStorage.setItem(KEY, JSON.stringify(snapshot));
       bus.emit('gameSaved', { checkpointId });

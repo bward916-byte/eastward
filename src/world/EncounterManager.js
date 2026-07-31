@@ -8,6 +8,7 @@
 
 import { bus } from '../core/EventBus.js';
 import { clamp } from '../core/utils.js';
+import { Creature } from '../entities/Creature.js';
 
 const APPROACH_R = 380;
 const PUSH_TIME = 2.4;      // seconds of pushing to clear the fallen tree
@@ -27,6 +28,9 @@ export class EncounterManager {
       sparkle: 0,
     }));
     this._tension = false;
+    this._combat = false;
+    this.creatures = [];
+    this.onClassChosen = null;   // main provides (classId) => void
   }
 
   getFlags() { return this.encounters.filter(e => e.resolved).map(e => e.id); }
@@ -54,6 +58,34 @@ export class EncounterManager {
 
       if (Math.abs(dist) < APPROACH_R && (e.type === 'adventure' || e.type === 'challenge')) {
         anyNear = true;
+      }
+
+      if (e.type === 'creature') {
+        if (!e.spawned && Math.abs(dist) < 620) {
+          e.spawned = true;
+          e.pack = [];
+          for (let i = 0; i < (e.count ?? 1); i++) {
+            const c = new Creature(e.kind ?? 'wolf', e.x + i * 48, this.terrain);
+            e.pack.push(c);
+            this.creatures.push(c);
+          }
+        }
+        if (e.spawned && e.pack.every(c => c.dead)) {
+          e.resolved = true;
+          e.sparkle = 1;
+          bus.emit('challengePassed', { id: e.id });
+        }
+        if (!e.resolved && dist > 0) maxX = Math.min(maxX, e.x - 42);
+        continue;
+      }
+
+      if (e.type === 'rite' && !e._dialogueOpen && dist > 0 && dist < 80) {
+        e._dialogueOpen = true;
+        this._runRite(e);
+      }
+      if (e.type === 'rite') {
+        if (!e.resolved && dist > 0) maxX = Math.min(maxX, e.x - 46);
+        continue;
       }
 
       if (e.type === 'interest') {
@@ -92,9 +124,31 @@ export class EncounterManager {
 
     if (!this._introScene) p.maxX = maxX;
 
+    // creatures live update + combat state (drives music layer, §H.2)
+    for (const c of this.creatures) c.update(dt, p);
+    const fighting = this.creatures.some(c => c.engaged);
+    if (fighting && !this._combat) { this._combat = true; bus.emit('combatStarted'); }
+    else if (!fighting && this._combat) { this._combat = false; bus.emit('combatEnded'); }
+
     // tension layer on approach, off when clear (§H.2 wiring)
     if (anyNear && !this._tension) { this._tension = true; bus.emit('challengeApproaching'); }
     else if (!anyNear && this._tension) { this._tension = false; bus.emit('challengePassed', { id: null }); }
+  }
+
+  async _runRite(e) {
+    const idx = await this.dialogue.ask(
+      e.lines ?? ['Choose your path.'],
+      e.choices ?? ['Thief', 'Wizard', 'Fighter'],
+      { speaker: e.speaker ?? 'Elder' }
+    );
+    const classId = (e.classIds ?? ['thief', 'wizard', 'fighter'])[idx];
+    e.resolved = true;
+    this.onClassChosen?.(classId);
+    if (e.responses?.[idx]) {
+      await this.dialogue.say([e.responses[idx]], { speaker: e.speaker ?? 'Elder', autoMs: 3600 });
+    }
+    bus.emit('riteCompleted', { classId });
+    bus.emit('challengePassed', { id: e.id });
   }
 
   async _runAdventure(e) {
@@ -115,10 +169,50 @@ export class EncounterManager {
   render(ctx, time) {
     for (const e of this.encounters) {
       if (e.type === 'adventure') this._renderNPC(ctx, e, time);
+      else if (e.type === 'rite') this._renderRite(ctx, e, time);
+      else if (e.type === 'creature') { /* creatures render below */ }
       else if (e.type === 'interest') this._renderInterest(ctx, e, time);
       else if (e.type === 'challenge') this._renderTree(ctx, e, time);
       if (e.sparkle > 0) this._renderSparkle(ctx, e, time);
     }
+    for (const c of this.creatures) c.render(ctx);
+  }
+
+  _renderRite(ctx, e, time) {
+    const x = e.x, y = e.y;
+    // village edge: two huts behind the elder
+    for (const [ox, w, hh] of [[70, 74, 52], [170, 60, 44]]) {
+      const hx = x + ox, hy = this.terrain.groundYAt(x + ox);
+      ctx.fillStyle = '#6d5b42';
+      ctx.fillRect(hx - w / 2, hy - hh, w, hh);
+      ctx.fillStyle = '#4a3a28';
+      ctx.beginPath();
+      ctx.moveTo(hx - w / 2 - 8, hy - hh);
+      ctx.lineTo(hx, hy - hh - 30);
+      ctx.lineTo(hx + w / 2 + 8, hy - hh);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#33271a';
+      ctx.fillRect(hx - 9, hy - 26, 18, 26);
+    }
+    // the elder
+    const bob = Math.sin(time * 1.6) * 0.7;
+    ctx.save();
+    ctx.translate(x, y - 27 + bob * 0.3);
+    ctx.strokeStyle = '#7a6a4e';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(12, 27); ctx.lineTo(14, -18); ctx.stroke();
+    ctx.fillStyle = '#8a8272';
+    ctx.beginPath();
+    ctx.moveTo(0, -19);
+    ctx.quadraticCurveTo(-12, 6, -9, 27);
+    ctx.lineTo(9, 27);
+    ctx.quadraticCurveTo(12, 6, 0, -19);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#d8c4a4';
+    ctx.beginPath(); ctx.arc(-1, -23, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#e8e4d8';   // white hair
+    ctx.beginPath(); ctx.arc(-2, -26, 6, Math.PI * 0.8, Math.PI * 2.05); ctx.fill();
+    ctx.restore();
   }
 
   _renderNPC(ctx, e, time) {

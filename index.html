@@ -24,6 +24,14 @@
         </svg>
       </div>
       <div id="hud-bars">
+        <div class="bar-row" id="row-health" hidden>
+          <span class="bar-label">HEALTH</span>
+          <div class="bar"><div class="bar-fill health" id="bar-health"></div></div>
+        </div>
+        <div class="bar-row" id="row-mana" hidden>
+          <span class="bar-label">MANA</span>
+          <div class="bar"><div class="bar-fill mana" id="bar-mana"></div></div>
+        </div>
         <div class="bar-row">
           <span class="bar-label">STAMINA</span>
           <div class="bar"><div class="bar-fill stamina" id="bar-stamina"></div><div class="bar-cap" id="bar-stamina-cap"></div></div>
@@ -38,6 +46,7 @@
 
     <div id="save-indicator" aria-live="polite">✦ Journey saved</div>
     <div id="artifact-counter" hidden>◈ <span id="artifact-count">0</span></div>
+    <button id="attack-btn" hidden aria-label="Attack">⚔</button>
 
     <div id="dialogue-box" hidden>
       <div id="dialogue-speaker"></div>

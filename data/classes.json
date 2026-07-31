@@ -1,0 +1,40 @@
+{
+  "thief": {
+    "name": "Thief",
+    "color": "#3f6b4a",
+    "attack": "knife",
+    "damage": 12,
+    "cooldown": 0.45,
+    "range": 430,
+    "projSpeed": 560,
+    "targets": ["ground", "air"],
+    "speedBonus": 1.05,
+    "climbSkill": 1.2,
+    "blurb": "Quick hands, quicker feet. Thrown knives, nimble climbing."
+  },
+  "wizard": {
+    "name": "Wizard",
+    "color": "#3b4f8c",
+    "attack": "bolt",
+    "damage": 16,
+    "cooldown": 0.7,
+    "range": 470,
+    "projSpeed": 430,
+    "targets": ["ground", "air"],
+    "mana": 50,
+    "manaRegen": 4,
+    "manaCost": 8,
+    "blurb": "Bolts of force now; telekinesis and elements in time."
+  },
+  "fighter": {
+    "name": "Fighter",
+    "color": "#8c3b3b",
+    "attack": "swipe",
+    "damage": 20,
+    "cooldown": 0.6,
+    "range": 64,
+    "targets": ["ground"],
+    "climbSkill": 1.1,
+    "blurb": "A wide blade and the strength to swing it. Melee only — the sky is out of reach."
+  }
+}

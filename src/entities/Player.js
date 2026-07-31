@@ -5,7 +5,10 @@
 // procedural; sprite rigs and age stages arrive in Phase 8.
 
 import { clamp } from '../core/utils.js';
+import { bus } from '../core/EventBus.js';
 import { SCRAMBLE_MIN, CLIMB_MIN } from '../world/TerrainSpline.js';
+import { nearestTarget } from './TargetAcquisition.js';
+import { Projectile } from './Projectile.js';
 
 // --- locomotion tunables --------------------------------------------------
 const BASE_SPEED = 150;        // px/s at Walk (1x)
@@ -65,6 +68,18 @@ export class Player {
     // higher = faster climb, less drain, (later) higher max angle & grip.
     this.climbSkill = 1.0;
     this.artifacts = 0;        // unidentified '???' artifacts held (§8)
+
+    // class & combat (Phase 6, Amendment 06 §O)
+    this.classId = null;
+    this.classDef = null;
+    this.health = 100;
+    this.maxHealth = 100;
+    this.mana = 0;
+    this.maxMana = 0;
+    this.attackCooldown = 0;
+    this.swingT = 0;           // fighter swipe anim
+    this.iframes = 0;
+    this.hurtFlash = 0;
     // §3.6 permanent progression + §13.3 wind hooks (later phases fill these)
     this.speedBonus = 1.0;
     this.windSpeedMod = 1.0;
@@ -72,6 +87,55 @@ export class Player {
 
     this.animTime = 0;
     this.slopeAngle = 0;       // signed, cached for render lean
+  }
+
+  applyClass(id, def) {
+    this.classId = id;
+    this.classDef = def;
+    if (def.speedBonus) this.speedBonus = def.speedBonus;
+    if (def.climbSkill) this.climbSkill = def.climbSkill;
+    if (def.mana) { this.maxMana = def.mana; this.mana = def.mana; }
+  }
+
+  takeDamage(n, fromX) {
+    if (this.iframes > 0 || this.health <= 0) return;
+    this.health -= n;
+    this.iframes = 0.9;
+    this.hurtFlash = 0.25;
+    this.vx += Math.sign(this.x - fromX) * 150;
+    if (this.health <= 0) {
+      this.health = 0;
+      bus.emit('playerDefeated');
+    }
+  }
+
+  /** Auto-aim attack (Amendment 06 §O): trigger, not aim. */
+  tryAttack(creatures, projectiles) {
+    const def = this.classDef;
+    if (!def || this.attackCooldown > 0 || this.state === 'CLIMB' || this.state === 'SLIDE') return;
+    if (def.attack === 'swipe') {
+      this.attackCooldown = def.cooldown;
+      this.swingT = 0.25;
+      for (const c of creatures) {
+        if (c.dead || !c.targetableBy.includes('melee')) continue;
+        const dx = c.x - this.x;
+        if (Math.sign(dx) === this.facing && Math.abs(dx) < def.range && Math.abs(c.y - this.y) < 55) {
+          c.takeDamage(def.damage, this.x);   // wide cleave: hits all in arc (§6)
+        }
+      }
+      return;
+    }
+    if (def.attack === 'bolt') {
+      if (this.mana < def.manaCost) return;
+      this.mana -= def.manaCost;
+    }
+    this.attackCooldown = def.cooldown;
+    const target = nearestTarget(this.x, this.y - 20, creatures, def.range, 'ground')
+      ?? nearestTarget(this.x, this.y - 20, creatures, def.range, 'air');
+    projectiles.push(new Projectile(
+      def.attack === 'bolt' ? 'bolt' : 'knife',
+      this.x + this.facing * 10, this.y - 26, target, def, this.facing
+    ));
   }
 
   get staminaCeiling() { return (this.endurance / ENDURANCE_MAX) * STAMINA_MAX; }
@@ -234,6 +298,18 @@ export class Player {
     if (hadStamina && this.stamina <= 0.01) this.fatigueTimer = FATIGUE_TIME;
     if (this.fatigueTimer > 0) this.fatigueTimer -= dt;
 
+    // combat timers & slow recovery
+    if (this.attackCooldown > 0) this.attackCooldown -= dt;
+    if (this.swingT > 0) this.swingT -= dt;
+    if (this.iframes > 0) this.iframes -= dt;
+    if (this.hurtFlash > 0) this.hurtFlash -= dt;
+    if (this.health > 0 && this.health < this.maxHealth) {
+      this.health = Math.min(this.maxHealth, this.health + 0.6 * dt);
+    }
+    if (this.maxMana > 0 && this.mana < this.maxMana) {
+      this.mana = Math.min(this.maxMana, this.mana + (this.classDef?.manaRegen ?? 0) * dt);
+    }
+
     const animSpeed = this.state === 'CLIMB' ? 0.8 : 1 + Math.abs(this.vx) / BASE_SPEED * 0.5;
     this.animTime += dt * animSpeed;
   }
@@ -292,8 +368,8 @@ export class Player {
       ctx.lineTo(Math.sin(a) * 11 * this.facing, 2 + Math.cos(a) * 20);
       ctx.stroke();
     }
-    // torso
-    ctx.strokeStyle = '#5a6b8c';
+    // torso (class-tinted once chosen)
+    ctx.strokeStyle = this.hurtFlash > 0 ? '#f0f0f0' : (this.classDef?.color ?? '#5a6b8c');
     ctx.lineWidth = 8;
     ctx.beginPath();
     ctx.moveTo(0, 3);
@@ -320,6 +396,16 @@ export class Player {
     ctx.beginPath();
     ctx.arc(this.facing * 0.5, -26 - bob * 0.3, 6.5, Math.PI * 0.9, Math.PI * 2.1);
     ctx.fill();
+
+    // fighter swipe arc — brief, readable, not flashy
+    if (this.swingT > 0 && this.classDef?.attack === 'swipe') {
+      const a = this.swingT / 0.25;
+      ctx.strokeStyle = `rgba(230, 226, 214, ${a * 0.7})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, -10, 40, this.facing > 0 ? -1.1 : Math.PI - 0.7, this.facing > 0 ? 0.7 : Math.PI + 1.1);
+      ctx.stroke();
+    }
 
     ctx.restore();
   }

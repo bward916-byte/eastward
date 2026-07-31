@@ -38,7 +38,10 @@ async function boot() {
   window.addEventListener('resize', resize);
   resize();
 
+  const classes = await fetch('data/classes.json').then(r => r.json());
   const player = new Player(60, 520);
+  const projectiles = [];
+  const attackBtn = document.getElementById('attack-btn');
   const input = new InputManager();
   const hud = new HudRenderer();
   const dialogue = new Dialogue();
@@ -101,6 +104,11 @@ async function boot() {
     weather.setBiome(biome.weather);
     const env = biome.environment ?? { dayNight: true, weather: true };
     const encounters = new EncounterManager(biome.encounters, terrain, player, dialogue);
+    encounters.onClassChosen = (classId) => {
+      player.applyClass(classId, classes[classId]);
+      attackBtn.hidden = false;
+    };
+    projectiles.length = 0;
     camera.nearestFlaggedDistance = () => encounters.nearestFlaggedDistance(player.x);
     scene = {
       id, biome, terrain, intro, checkpoints, env, encounters,
@@ -113,6 +121,10 @@ async function boot() {
   if (snap) {
     await loadScene(snap.biome ?? 'meadow', snap.player.x);
     saveManager.applyTo(player, snap);
+    if (snap.player.classId) {
+      player.applyClass(snap.player.classId, classes[snap.player.classId]);
+      attackBtn.hidden = false;
+    }
     if (snap.world?.timeOfDay != null) dayNight.phase = snap.world.timeOfDay;
     scene.encounters.applyFlags(snap.world?.flags);
     player.y = scene.terrain.groundYAt(player.x);
@@ -126,6 +138,33 @@ async function boot() {
   }
 
   bus.on('gameSaved', () => hud.flashSaved());
+  attackBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (!dialogue.active) input.pressAttack();
+  });
+
+  // combat defeat → resume at most recent checkpoint (Amendment 01 §A.2)
+  let respawning = false;
+  bus.on('playerDefeated', async () => {
+    if (respawning) return;
+    respawning = true;
+    setTimeout(async () => {
+      const snap = saveManager.load();
+      if (snap) {
+        await loadScene(snap.biome ?? 'meadow', snap.player.x);
+        saveManager.applyTo(player, snap);
+        player.health = Math.max(50, snap.player.health ?? 100);
+        if (snap.player.classId) player.applyClass(snap.player.classId, classes[snap.player.classId]);
+        if (snap.world?.timeOfDay != null) dayNight.phase = snap.world.timeOfDay;
+        scene.encounters.applyFlags(snap.world?.flags);
+        for (const cp of scene.checkpoints) { if (cp.x <= player.x + 1) cp.reached = true; cp.glow = 0; }
+        saveManager.lastCheckpointId = snap.checkpointId;
+      } else {
+        player.health = player.maxHealth;
+      }
+      respawning = false;
+    }, 900);
+  });
 
   let worldTime = 0;
   let audioSync = 0;
@@ -156,7 +195,16 @@ async function boot() {
 
       player.update(dt, input, scene.terrain);
       scene.intro?.update(dt);
-      if (!scene.intro) scene.encounters.update(dt, input);
+      if (!scene.intro) {
+        scene.encounters.update(dt, input);
+        if (input.attackPressed && player.classDef && !dialogue.active) {
+          player.tryAttack(scene.encounters.creatures, projectiles);
+        }
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+          projectiles[i].update(dt, scene.encounters.creatures);
+          if (!projectiles[i].alive) projectiles.splice(i, 1);
+        }
+      }
       for (const cp of scene.checkpoints) cp.update(dt, player);
       camera.update(dt, player);
       scene.parallax.update(dt);
@@ -171,6 +219,7 @@ async function boot() {
       ctx.translate(sx / camera.zoom, sy / camera.zoom);
       for (const cp of scene.checkpoints) cp.render(ctx, worldTime);
       scene.encounters.render(ctx, worldTime);
+      for (const pr of projectiles) pr.render(ctx);
       scene.intro?.renderWorld(ctx);
       player.render(ctx, alpha);
       scene.parallax.renderForeground(ctx, camera);

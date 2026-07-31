@@ -59,6 +59,8 @@
   transition: width 0.08s linear;
 }
 .bar-fill.stamina   { background: linear-gradient(to bottom, #ffd764, #e0a734); }
+.bar-fill.health    { background: linear-gradient(to bottom, #e07a64, #b84a3a); }
+.bar-fill.mana      { background: linear-gradient(to bottom, #7a9ae0, #4a6ab8); }
 .bar-fill.endurance { background: linear-gradient(to bottom, #6fd0a8, #3f9a76); }
 
 /* Darkened region past the current endurance ceiling on the stamina bar */
@@ -186,3 +188,25 @@
   user-select: none;
 }
 #artifact-counter[hidden] { display: none; }
+
+/* Touch attack button — appears once a class is chosen */
+#attack-btn {
+  position: absolute;
+  right: 18px;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 1px solid rgba(216, 201, 138, 0.5);
+  background: rgba(14, 17, 12, 0.6);
+  color: #ece5cc;
+  font-size: 24px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+#attack-btn:active { background: rgba(216, 201, 138, 0.3); }
+#attack-btn[hidden] { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  #attack-btn { opacity: 0.55; } /* desktop has X/F; keep it subtle */
+}

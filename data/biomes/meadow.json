@@ -91,6 +91,10 @@
       [
         9000,
         515
+      ],
+      [
+        12000,
+        518
       ]
     ]
   },
@@ -176,6 +180,39 @@
       "id": "mdw-relic-2",
       "type": "interest",
       "x": 5250
+    },
+    {
+      "id": "mdw-wolves",
+      "type": "creature",
+      "kind": "wolf",
+      "count": 2,
+      "x": 6350
+    },
+    {
+      "id": "mdw-rite",
+      "type": "rite",
+      "x": 7250,
+      "speaker": "Elder",
+      "lines": [
+        "So the road brought you here, little one. Rest \u2014 the village is safe.",
+        "Travelers spoke of your family. East, past the pass. You'll need more than luck to follow.",
+        "It is time for your Rite of Passage. What are your hands made for?"
+      ],
+      "choices": [
+        "The knife and the shadow",
+        "The word and the will",
+        "The blade and the shield"
+      ],
+      "classIds": [
+        "thief",
+        "wizard",
+        "fighter"
+      ],
+      "responses": [
+        "Quick and quiet, then. Keep your knives close and your feet closer.",
+        "The will bends the world, in time. Start with a spark.",
+        "Strong hands. Swing wide, stand fast \u2014 but the sky will never fear you."
+      ]
     }
   ]
 }

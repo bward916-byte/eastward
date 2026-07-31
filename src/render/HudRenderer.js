@@ -11,6 +11,10 @@ export class HudRenderer {
     this.portrait = document.getElementById('hud-portrait');
     this.saveIcon = document.getElementById('save-indicator');
     this.artifactWrap = document.getElementById('artifact-counter');
+    this.rowHealth = document.getElementById('row-health');
+    this.barHealth = document.getElementById('bar-health');
+    this.rowMana = document.getElementById('row-mana');
+    this.barMana = document.getElementById('bar-mana');
     this.artifactCount = document.getElementById('artifact-count');
     this._saveTimer = null;
   }
@@ -30,6 +34,14 @@ export class HudRenderer {
       this.artifactWrap.hidden = n === 0;
       this.artifactCount.textContent = n;
     }
+    // Health visible whenever below full (Amendment 02 §D.2); mana for casters
+    const showHealth = player.health < player.maxHealth - 0.5;
+    this.rowHealth.hidden = !showHealth;
+    if (showHealth) this.barHealth.style.width = (player.health / player.maxHealth * 100) + '%';
+    const showMana = player.maxMana > 0;
+    this.rowMana.hidden = !showMana;
+    if (showMana) this.barMana.style.width = (player.mana / player.maxMana * 100) + '%';
+
     const stamPct = player.stamina;                       // out of 100
     const endPct = player.endurance;
     this.stamina.style.width = stamPct + '%';

@@ -16,6 +16,7 @@ export class SaveManager {
   constructor(player) {
     this.player = player;
     this.lastCheckpointId = null;
+    this.biomeId = 'meadow';
 
     // '?new' in the URL starts a fresh journey (clears the rolling slot)
     if (new URLSearchParams(location.search).has('new')) {
@@ -25,6 +26,8 @@ export class SaveManager {
     bus.on('checkpointReached', ({ id }) => this.saveAtCheckpoint(id));
   }
 
+  setBiome(id) { this.biomeId = id; }
+
   saveAtCheckpoint(checkpointId) {
     if (checkpointId === this.lastCheckpointId) return; // no re-fire on linger
     this.lastCheckpointId = checkpointId;
@@ -32,6 +35,7 @@ export class SaveManager {
     const snapshot = {
       version: SCHEMA_VERSION,
       checkpointId,
+      biome: this.biomeId,
       savedAt: Date.now(),
       player: {
         x: this.player.x,

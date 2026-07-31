@@ -21,6 +21,7 @@ export class Camera {
     this._desiredZoom = ZOOM.NORMAL;
     this._fastTimer = 0;
     this.eastBias = 0.16;     // fraction of view width the player sits left of center
+    this.focusX = null;       // scripted focus override (intro farewell, later cutscenes)
   }
 
   resize(w, h) { this.viewW = w; this.viewH = h; }
@@ -45,7 +46,7 @@ export class Camera {
     this.zoom = damp(this.zoom, this._desiredZoom, ZOOM_RATE, dt);
 
     // --- follow with east bias ---
-    const targetX = player.x + this.viewW * this.eastBias / this.zoom;
+    const targetX = this.focusX ?? (player.x + this.viewW * this.eastBias / this.zoom);
     const targetY = player.y - this.viewH * 0.12 / this.zoom;
     this.x = damp(this.x, targetX, 6, dt);
     this.y = damp(this.y, targetY, 4, dt);

@@ -1,0 +1,31 @@
+{
+  "id": "intro",
+  "name": "The Night of Separation",
+  "palette": {
+    "skyTop": "#0c1220",
+    "skyBottom": "#3a2028",
+    "sun": "#b8c4d8",
+    "l2Base": "#1a2234",
+    "l2Accent": "#242e44",
+    "l3Base": "#141c2c",
+    "l3Accent": "#1d2738",
+    "l4Base": "#10161f",
+    "l4Accent": "#182028",
+    "l5Base": "#0d1218",
+    "l5Accent": "#141a20",
+    "groundTop": "#2a3324",
+    "groundDeep": "#20261c",
+    "dirt": "#352c24",
+    "fogTint": "rgba(58, 32, 40, 0.16)"
+  },
+  "layerScroll": { "l2": 0.05, "l3": 0.15, "l4": 0.35, "l5": 0.8 },
+  "groundY": 520,
+  "grassDensity": 0.05,
+  "terrain": {
+    "points": [
+      [0, 520], [400, 516], [820, 518], [860, 900], [1000, 900],
+      [1040, 518], [1400, 522], [1900, 518], [2400, 520]
+    ]
+  },
+  "checkpoints": []
+}

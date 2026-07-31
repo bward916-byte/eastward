@@ -50,6 +50,8 @@ export class Player {
     this.vy = 0;
     this.facing = 1;
     this.grounded = true;
+    this.minX = 40;
+    this.maxX = Infinity;
 
     this.state = 'IDLE';
     this.stamina = STAMINA_MAX;
@@ -169,7 +171,8 @@ export class Player {
       this.vx += clamp(targetVx - this.vx, -rate * control * dt, rate * control * dt);
       this.x += this.vx * dt;
     }
-    if (this.x < 40) { this.x = 40; this.vx = Math.max(0, this.vx); }
+    if (this.x < this.minX) { this.x = this.minX; this.vx = Math.max(0, this.vx); }
+    if (this.x > this.maxX) { this.x = this.maxX; this.vx = Math.min(0, this.vx); }
 
     // ---- jump / gravity / landing ----
     const canJump = this.grounded && this.state !== 'CLIMB' && this.state !== 'SLIDE'

@@ -117,3 +117,40 @@
   pointer-events: none;
   user-select: none;
 }
+
+/* Ground-anchored dialogue box (§4) — bottom strip, never a floating panel */
+#dialogue-box {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  width: min(620px, 86vw);
+  background: rgba(14, 17, 12, 0.88);
+  border: 1px solid rgba(216, 201, 138, 0.4);
+  border-radius: 8px;
+  padding: 10px 16px 12px;
+  color: #ece5cc;
+  user-select: none;
+  cursor: pointer;
+}
+#dialogue-box[hidden] { display: none; }
+#dialogue-speaker {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #d8c98a;
+  margin-bottom: 3px;
+}
+#dialogue-text {
+  font-size: 15px;
+  line-height: 1.45;
+  min-height: 1.45em;
+}
+#dialogue-hint {
+  position: absolute;
+  right: 10px;
+  bottom: 6px;
+  font-size: 10px;
+  opacity: 0.55;
+  animation: hint-pulse 1.6s ease-in-out infinite;
+}
+@keyframes hint-pulse { 0%,100% { opacity: 0.55; } 50% { opacity: 0.2; } }

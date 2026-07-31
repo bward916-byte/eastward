@@ -18,6 +18,8 @@ import { DayNightCycle, DAY_SECONDS } from './world/DayNightCycle.js';
 import { WindSystem } from './world/WindSystem.js';
 import { WeatherSystem } from './world/WeatherSystem.js';
 import { EncounterManager } from './world/EncounterManager.js';
+import { WorldProps } from './world/WorldProps.js';
+import { AmbientWildlife } from './world/AmbientWildlife.js';
 import { Town } from './world/Town.js';
 import { ParallaxRenderer } from './render/ParallaxRenderer.js';
 import { HudRenderer } from './render/HudRenderer.js';
@@ -101,8 +103,15 @@ async function boot() {
   });
 
   let scene = null;
-  let sceneFade = 0;          // 0 = clear, 1 = black (biome transitions)
   let transitioning = false;
+  const biomeCache = {};
+  async function fetchBiome(id) {
+    if (!biomeCache[id]) biomeCache[id] = fetch(`data/biomes/${id}.json`).then(r => r.json());
+    return biomeCache[id];
+  }
+  // seamless crossfade: the outgoing frame dissolves over the incoming scene
+  const oldFrame = document.createElement('canvas');
+  let oldFrameAlpha = 0;
   const biomeLabel = document.getElementById('biome-label');
 
   function showBiomeName(name) {
@@ -112,24 +121,27 @@ async function boot() {
     setTimeout(() => biomeLabel.classList.remove('visible'), 3200);
   }
 
-  async function transitionTo(id, spawnX) {
+  async function transitionTo(id, spawnX, opts = {}) {
     while (transitioning) await new Promise(r => setTimeout(r, 60));
     transitioning = true;
-    const fadeOut = setInterval(() => { sceneFade = Math.min(1, sceneFade + 0.07); }, 30);
-    await new Promise(r => setTimeout(r, 480));
-    clearInterval(fadeOut);
-    sceneFade = 1;
+    // capture the outgoing frame — no blackout, the world dissolves across
+    oldFrame.width = canvas.width;
+    oldFrame.height = canvas.height;
+    oldFrame.getContext('2d').drawImage(canvas, 0, 0);
+    oldFrameAlpha = 1;
+    const keepVx = opts.keepMomentum ? player.vx : 0;
     await loadScene(id, spawnX);
+    if (keepVx) { player.vx = keepVx; }
     bus.emit('biomeTransition', { to: id });
     showBiomeName(scene.biome.name);
-    const fadeIn = setInterval(() => {
-      sceneFade = Math.max(0, sceneFade - 0.06);
-      if (sceneFade <= 0) { clearInterval(fadeIn); transitioning = false; }
+    const iv = setInterval(() => {
+      oldFrameAlpha = Math.max(0, oldFrameAlpha - 0.045);
+      if (oldFrameAlpha <= 0) { clearInterval(iv); transitioning = false; }
     }, 30);
   }
 
   async function loadScene(id, spawnX) {
-    const biome = await fetch(`data/biomes/${id}.json`).then(r => r.json());
+    const biome = await fetchBiome(id);
     let terrain, intro = null;
 
     if (id === 'intro') {
@@ -170,6 +182,8 @@ async function boot() {
     scene = {
       id, biome, terrain, intro, checkpoints, env, encounters, town,
       parallax: new ParallaxRenderer(biome, terrain),
+      props: new WorldProps(biome, terrain),
+      wildlife: new AmbientWildlife(biome, terrain),
     };
   }
 
@@ -328,6 +342,7 @@ async function boot() {
         }
       }
       for (const cp of scene.checkpoints) cp.update(dt, player);
+      scene.wildlife.update(dt, player);
       camera.update(dt, player);
       scene.parallax.update(dt);
       ambient.update(dt, player);
@@ -337,13 +352,14 @@ async function boot() {
       hud.xpProgress = xpManager.progress;
       // biome chaining: crossing the authored east exit moves the journey on (§13)
       const exit = scene.biome.exitEast;
-      if (exit && !transitioning && !demo.active && player.x >= exit.x) {
-        transitionTo(exit.to, 60);
+      if (exit) {
+        if (player.x > exit.x - 900) fetchBiome(exit.to);   // prefetch: instant swap
+        if (!transitioning && !demo.active && player.x >= exit.x) {
+          transitionTo(exit.to, 60, { keepMomentum: true });
+        }
       }
 
-      setVisible(journeyBtn,
-        scene.checkpoints.some(cp => cp.reached && Math.abs(player.x - cp.x) < 80)
-        || scene.town?.inTown);   // the town IS a checkpoint (§A.1)
+      setVisible(journeyBtn, true);   // journey/records always reachable
       const nearAct = !!scene.town?.nearService || !!scene.encounters.nearInteractable;
       setVisible(contextBtn, nearAct);
       setVisible(attackBtn, !!player.classDef && !scene.town?.inTown && !nearAct);
@@ -355,6 +371,8 @@ async function boot() {
       scene.parallax.render(ctx, camera, scene.env.dayNight ? dayNight : null);
       camera.applyTransform(ctx);
       ctx.translate(sx / camera.zoom, sy / camera.zoom);
+      scene.props.render(ctx, camera, worldTime);
+      scene.wildlife.render(ctx);
       for (const cp of scene.checkpoints) cp.render(ctx, worldTime);
       scene.town?.render(ctx, worldTime);
       scene.encounters.render(ctx, worldTime);
@@ -378,10 +396,11 @@ async function boot() {
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, camera.viewW, camera.viewH);
       }
-      if (sceneFade > 0) {
+      if (oldFrameAlpha > 0) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.fillStyle = `rgba(6, 8, 12, ${sceneFade})`;
-        ctx.fillRect(0, 0, camera.viewW, camera.viewH);
+        ctx.globalAlpha = oldFrameAlpha;
+        ctx.drawImage(oldFrame, 0, 0, camera.viewW, camera.viewH);
+        ctx.globalAlpha = 1;
       }
       if (scene.env.dayNight) dayNight.renderOverlay(ctx, camera);
       scene.intro?.renderOverlay(ctx, camera);
@@ -423,6 +442,19 @@ async function boot() {
     journeyInput.value = '';
     journeyCode.value = saveManager.exportCode(scene.biome, manifest) ?? '(no saved journey yet)';
     journeyPanel.hidden = false;
+  });
+  const resetBtn = document.getElementById('journey-reset');
+  let resetArmed = 0;
+  bindTap(resetBtn, () => {
+    const now = performance.now();
+    if (now - resetArmed < 4000) {
+      localStorage.removeItem('eastward.save');
+      location.href = location.pathname;   // clean reload → the intro
+      return;
+    }
+    resetArmed = now;
+    resetBtn.textContent = 'Tap again to erase everything';
+    setTimeout(() => { resetBtn.textContent = '⟲ Start a new journey'; resetArmed = 0; }, 4000);
   });
   bindTap(document.getElementById('journey-close'), () => {
     journeyPanel.hidden = true;

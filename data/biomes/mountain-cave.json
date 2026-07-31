@@ -122,10 +122,19 @@
       "id": "cave-crystal-2",
       "type": "interest",
       "x": 2900
+    },
+    {
+      "id": "cave-relic-3",
+      "type": "interest",
+      "x": 1500
     }
   ],
   "exitEast": {
     "to": "mountain-east",
     "x": 3300
-  }
+  },
+  "props": [
+    "crystal",
+    "rock"
+  ]
 }

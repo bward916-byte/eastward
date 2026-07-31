@@ -150,6 +150,26 @@
         "mountain-high",
         "mountain-cave"
       ]
+    },
+    {
+      "id": "mtn-wolves",
+      "type": "creature",
+      "kind": "wolf",
+      "count": 2,
+      "x": 1800
+    },
+    {
+      "id": "mtn-relic",
+      "type": "interest",
+      "x": 900
     }
+  ],
+  "props": [
+    "rock",
+    "deadtree"
+  ],
+  "wildlife": [
+    "bird",
+    "rabbit"
   ]
 }

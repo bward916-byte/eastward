@@ -197,10 +197,39 @@
       "kind": "wolf",
       "count": 3,
       "x": 6400
+    },
+    {
+      "id": "fst-bats",
+      "type": "creature",
+      "kind": "bat",
+      "count": 2,
+      "x": 2450,
+      "blocking": false
+    },
+    {
+      "id": "fst-relic-3",
+      "type": "interest",
+      "x": 5600
+    },
+    {
+      "id": "fst-boar-2",
+      "type": "creature",
+      "kind": "boar",
+      "count": 1,
+      "x": 5450
     }
   ],
   "exitEast": {
     "to": "mountain",
     "x": 7200
-  }
+  },
+  "props": [
+    "stump",
+    "mushroom",
+    "rock"
+  ],
+  "wildlife": [
+    "bird",
+    "rabbit"
+  ]
 }

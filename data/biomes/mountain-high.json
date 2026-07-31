@@ -159,10 +159,22 @@
       "id": "high-relic",
       "type": "interest",
       "x": 3200
+    },
+    {
+      "id": "high-bats",
+      "type": "creature",
+      "kind": "bat",
+      "count": 2,
+      "x": 2600,
+      "blocking": false
     }
   ],
   "exitEast": {
     "to": "mountain-east",
     "x": 3700
-  }
+  },
+  "props": [
+    "rock",
+    "deadtree"
+  ]
 }

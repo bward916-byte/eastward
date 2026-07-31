@@ -9,7 +9,7 @@ const IDLE = { ...RUN, moveDir: 0 };
 
 const STOPS = [
   {
-    caption: 'EASTWARD — the feature tour. (You return to your last checkpoint after.) Walk · Run · Jump.',
+    caption: 'EASTWARD — the feature tour. (You resume right where you left off.) Walk · Run · Jump.',
     biome: 'meadow', x: 300, duration: 11,
     script: (t) => (Math.floor(t * 1.1) % 4 === 3 && (t % 1) < 0.05)
       ? { ...RUN, jumpPressed: true, jumpHeld: true } : RUN,

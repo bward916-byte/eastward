@@ -113,7 +113,21 @@
         "The warmth lingers. For the first time in a long while, the road ahead feels close.",
         "Down the slopes, then. They cannot be far now."
       ]
+    },
+    {
+      "id": "east-relic",
+      "type": "interest",
+      "x": 1800
     }
   ],
-  "endX": 2300
+  "endX": 2300,
+  "props": [
+    "flowers",
+    "rock",
+    "stump"
+  ],
+  "wildlife": [
+    "bird",
+    "rabbit"
+  ]
 }

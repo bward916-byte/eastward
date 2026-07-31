@@ -213,6 +213,18 @@
         "The will bends the world, in time. Start with a spark.",
         "Strong hands. Swing wide, stand fast \u2014 but the sky will never fear you."
       ]
+    },
+    {
+      "id": "mdw-relic-3",
+      "type": "interest",
+      "x": 5650
+    },
+    {
+      "id": "mdw-wolves-2",
+      "type": "creature",
+      "kind": "wolf",
+      "count": 2,
+      "x": 9250
     }
   ],
   "town": {
@@ -246,5 +258,14 @@
   "exitEast": {
     "to": "forest",
     "x": 9600
-  }
+  },
+  "props": [
+    "rock",
+    "flowers",
+    "stump"
+  ],
+  "wildlife": [
+    "bird",
+    "rabbit"
+  ]
 }

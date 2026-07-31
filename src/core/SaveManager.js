@@ -19,6 +19,7 @@ export class SaveManager {
     this.lastCheckpointId = null;
     this.biomeId = 'meadow';
     this.getWorldState = null;   // main provides () => ({ timeOfDay, ... })
+    this.suspended = false;      // demo mode: checkpoint saves ignored
 
     // '?new' in the URL starts a fresh journey (clears the rolling slot)
     if (new URLSearchParams(location.search).has('new')) {
@@ -32,6 +33,7 @@ export class SaveManager {
   setBiome(id) { this.biomeId = id; }
 
   saveAtCheckpoint(checkpointId) {
+    if (this.suspended) return;                          // demo mode
     if (checkpointId === this.lastCheckpointId) return; // no re-fire on linger
     this.lastCheckpointId = checkpointId;
 

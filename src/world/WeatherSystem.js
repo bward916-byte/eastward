@@ -38,6 +38,14 @@ export class WeatherSystem {
     bus.emit('weatherChanged', { state: this.state });
   }
 
+  /** Force a state (demo mode / scripted set pieces). */
+  force(state, holdSeconds = 999) {
+    if (!STATES[state]) return;
+    this.state = state;
+    this.timer = holdSeconds;
+    bus.emit('weatherChanged', { state });
+  }
+
   _pickNext() {
     const entries = Object.entries(this.weights).filter(([k]) => STATES[k] && k !== this.state);
     const total = entries.reduce((s, [, w]) => s + w, 0);

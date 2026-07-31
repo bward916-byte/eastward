@@ -404,6 +404,16 @@ export class Player {
     const rig = this._rig;
     const hipY = y - 22 * rig.heightScale + bob * 0.4;
 
+    // ground shadow — world space, before any rig transforms
+    if (this.grounded) this._shadowY = y;
+    ctx.save();
+    ctx.translate(x, this._shadowY ?? y);
+    ctx.fillStyle = 'rgba(20, 24, 14, 0.28)';
+    ctx.beginPath();
+    ctx.ellipse(0, 1, (13 - (this.grounded ? 0 : 5)) * rig.heightScale, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
     ctx.save();
     // §F.1: height scales upward from the ground-contact point only
     ctx.translate(x, y);
@@ -411,17 +421,6 @@ export class Player {
     ctx.translate(-x, -y);
     ctx.translate(x, y - 22 + bob * 0.4 / rig.heightScale);
     ctx.rotate(lean + rig.stoop * this.facing);
-
-    // shadow
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.translate(x, this.grounded ? y : (this._shadowY ?? y));
-    ctx.fillStyle = 'rgba(20, 24, 14, 0.28)';
-    ctx.beginPath();
-    ctx.ellipse(0, 1, 13 - (this.grounded ? 0 : 5), 4, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-    if (this.grounded) this._shadowY = y;
 
     const swing = climbing ? Math.sin(t * 6) : moving ? Math.sin(t * 10) : 0;
     const legA = climbing ? swing * 0.55 : swing * (0.4 + speedFrac * 0.5);

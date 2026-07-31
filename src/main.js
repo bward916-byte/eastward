@@ -28,6 +28,10 @@ import { AmbientManager } from './audio/AmbientManager.js';
 import { ExperienceManager } from './systems/ExperienceManager.js';
 import { UpgradeResolver } from './systems/UpgradeResolver.js';
 import { LevelUpNotification } from './render/LevelUpNotification.js';
+import { DemoMode } from './demo/DemoMode.js';
+
+// Flip to false to hide the demo tour button entirely.
+const SHOW_DEMO = true;
 
 async function boot() {
   const canvas = document.getElementById('game-canvas');
@@ -208,6 +212,8 @@ async function boot() {
     (dt) => {
       worldTime += dt;
       input.update(dt);
+      demo.update(dt);
+      const inp = demo.active ? demo.scriptInput : input;
 
       // environment (§13.3/§13.4) + the aging clock (§5: time, not distance)
       if (scene.env.dayNight) {
@@ -217,7 +223,7 @@ async function boot() {
       if (scene.env.weather) {
         wind.update(dt, weather.windBoost);
         weather.update(dt, wind, camera);
-        player.windSpeedMod = wind.speedModFor(input.moveDir) * weather.speedMod;
+        player.windSpeedMod = wind.speedModFor((demo.active ? demo.scriptInput : input).moveDir) * weather.speedMod;
         player.windValue = wind.value;
         scene.parallax.setWind(Math.min(1, wind.strength + weather.rainLevel * 0.2));
       } else {
@@ -248,13 +254,13 @@ async function boot() {
         ambient.setRain(scene.env.weather ? weather.rainLevel : 0);
       }
 
-      player.update(dt, input, scene.terrain);
+      player.update(dt, inp, scene.terrain);
       scene.intro?.update(dt);
       if (!scene.intro) {
-        scene.encounters.update(dt, input);
-        scene.town?.update(dt, input.interactPressed && !dialogue.active);
+        scene.encounters.update(dt, inp);
+        scene.town?.update(dt, inp.interactPressed && !dialogue.active);
         // towns are non-combat zones (§8): weapons suppressed inside
-        if (input.attackPressed && player.classDef && !dialogue.active && !scene.town?.inTown) {
+        if (inp.attackPressed && player.classDef && !dialogue.active && !scene.town?.inTown) {
           player.tryAttack(scene.encounters.creatures, projectiles);
         }
         for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -272,7 +278,7 @@ async function boot() {
       hud.xpProgress = xpManager.progress;
       // biome chaining: crossing the authored east exit moves the journey on (§13)
       const exit = scene.biome.exitEast;
-      if (exit && !transitioning && player.x >= exit.x) {
+      if (exit && !transitioning && !demo.active && player.x >= exit.x) {
         transitionTo(exit.to, 60);
       }
 
@@ -325,6 +331,22 @@ async function boot() {
       hud.update(player);
     }
   );
+
+  // --- Demo tour (hideable via SHOW_DEMO) ---
+  const demo = new DemoMode({
+    player, classes, weather, dayNight, dialogue, saveManager,
+    transitionTo,
+    restoreLastCheckpoint: async () => {
+      const s = saveManager.load();
+      if (s) await restoreFromSnapshot(s);
+      else await loadScene('intro', 60);
+    },
+  });
+  const demoBtn = document.getElementById('demo-btn');
+  demoBtn.hidden = !SHOW_DEMO;
+  demoBtn.addEventListener('pointerdown', () => {
+    if (!demo.active && !dialogue.active) demo.start();
+  });
 
   // --- Portable save codes (Amendment 07 §S) ---
   const journeyBtn = document.getElementById('journey-btn');

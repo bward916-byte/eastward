@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eastward — Feature Showcase</title>
+<link rel="stylesheet" href="styles/demo.css">
+</head>
+<body>
+<header>
+  <h1>EASTWARD</h1>
+  <p class="tag">One life. One direction. A 2D adventure built on vanilla Canvas — zero dependencies, every panel below runs the real game modules.</p>
+  <a class="play-btn" href="index.html">▶ Play the full game</a>
+</header>
+
+<section>
+  <h2>The Journey <span>locomotion · terrain tiers · day/night · weather · wind · checkpoints</span></h2>
+  <p>A traveler walks the real Sunfall Meadow: run promotes from walk, scramble hills slow and drain, the 73° cliff triggers the true-climb reach cycle, slopes slide, weather rolls through, and the day turns at 40× speed. Nothing here is scripted footage — it's the engine playing itself.</p>
+  <canvas id="cv-hero" width="1100" height="400"></canvas>
+  <div class="row" id="hero-status"></div>
+</section>
+
+<section>
+  <h2>A Whole Life <span>aging system · height · facial hair · stat curve</span></h2>
+  <p>Age is tied to time, not distance. Drag through a lifetime — height grows from the feet up, the head ratio evens out, stubble arrives in late Youth, hair and beard grey together, the Elder stoops. The stat curve tells the same story: children recover fast and hit soft; elders trade muscle for casting.</p>
+  <div class="split">
+    <canvas id="cv-age" width="420" height="300"></canvas>
+    <div class="controls">
+      <label>Days lived: <b id="age-days">0</b> — <b id="age-stage">Child</b></label>
+      <input type="range" id="age-slider" min="0" max="24" step="0.1" value="0">
+      <div id="age-stats" class="stat-lines"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Three Paths <span>classes · auto-aim · accuracy · targeting tags</span></h2>
+  <p>Thief knives and Wizard bolts auto-acquire targets — skill lives in positioning, and trained Accuracy decides whether shots land (watch the occasional knife sail wide). The Fighter's cleave is melee-only by design: the bat lane shows the sword literally unable to touch the sky.</p>
+  <canvas id="cv-classes" width="1100" height="330"></canvas>
+</section>
+
+<section>
+  <h2>Seven Worlds <span>6-layer parallax · authored palettes · biome chaining</span></h2>
+  <p>Every biome is a complete scene — its own palette, treeline density, terrain profile, weather table, and musical key, authored as one JSON file each. The Mountain Pass splits into two of them: a multi-path fork where your build picks the road.</p>
+  <div class="row" id="biome-buttons"></div>
+  <canvas id="cv-biome" width="1100" height="360"></canvas>
+</section>
+
+<section>
+  <h2>Adaptive Score <span>generative stems · layered tension/combat/town · crossfades</span></h2>
+  <p>No audio files exist — every note is synthesized live from each biome's authored key, tempo, and scale via Web Audio. Pick a biome's theme, then fade the tension drone, combat pulse, or town warmth in and out: the same layers gameplay drives automatically.</p>
+  <div class="row" id="audio-buttons"></div>
+  <div class="row" id="layer-buttons"></div>
+</section>
+
+<section>
+  <h2>Carry Your Journey <span>portable save codes · CRC-checked · human-friendly</span></h2>
+  <p>Any checkpoint save packs into a ~50-character code — bit-packed binary, CRC-16 checked, Base32 without confusable letters. Build a save below and watch it encode live; a single mistyped character is caught before it can ever load.</p>
+  <div class="split">
+    <div class="controls">
+      <label>Class
+        <select id="sc-class"><option>thief</option><option>wizard</option><option>fighter</option></select>
+      </label>
+      <label>Gold: <b id="sc-gold-v">50</b><input type="range" id="sc-gold" min="0" max="500" value="50"></label>
+      <label>Days lived: <b id="sc-age-v">6</b><input type="range" id="sc-age" min="0" max="24" value="6"></label>
+      <label>Checkpoint
+        <select id="sc-cp"><option>meadow-start</option><option>meadow-shrine</option><option>meadow-camp</option></select>
+      </label>
+    </div>
+    <div class="controls">
+      <code id="sc-code"></code>
+      <p class="fine" id="sc-verify"></p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Everything Else On The Road</h2>
+  <div class="grid" id="feature-grid"></div>
+</section>
+
+<footer>
+  <a class="play-btn" href="index.html">▶ Play Eastward</a>
+  <p class="fine">Vanilla ES6 modules · HTML5 Canvas · Web Audio · no build step, no libraries · playable on phones (landscape) and desktop</p>
+</footer>
+
+<script type="module" src="src/demo/demo.js"></script>
+</body>
+</html>

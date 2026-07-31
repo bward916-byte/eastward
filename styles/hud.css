@@ -330,3 +330,66 @@
   user-select: none;
 }
 #biome-label.visible { opacity: 1; }
+
+/* Demo tour UI */
+#demo-btn {
+  position: absolute;
+  top: 12px;
+  right: 176px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 17px;
+  border: 1px solid rgba(216, 201, 138, 0.45);
+  background: rgba(12, 16, 10, 0.55);
+  color: #d8c98a;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+#demo-btn[hidden] { display: none; }
+#demo-ui { position: absolute; inset: 0; pointer-events: none; }
+#demo-ui[hidden] { display: none; }
+#demo-caption {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  bottom: calc(150px + env(safe-area-inset-bottom));
+  width: min(680px, 88vw);
+  text-align: center;
+  font-size: 17px;
+  line-height: 1.5;
+  letter-spacing: 0.5px;
+  color: #f0ecd8;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
+  opacity: 0;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+#demo-caption.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+#demo-controls {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+#demo-dots { display: flex; gap: 5px; }
+#demo-dots span {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: rgba(216, 201, 138, 0.25);
+}
+#demo-dots span.on { background: #d8c98a; }
+#demo-controls button {
+  font: inherit;
+  font-size: 12px;
+  color: #ece5cc;
+  background: rgba(14, 17, 12, 0.7);
+  border: 1px solid rgba(216, 201, 138, 0.5);
+  border-radius: 14px;
+  padding: 5px 13px;
+  cursor: pointer;
+}

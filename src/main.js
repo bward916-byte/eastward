@@ -33,6 +33,23 @@ import { DemoMode } from './demo/DemoMode.js';
 // Flip to false to hide the demo tour button entirely.
 const SHOW_DEMO = true;
 
+// On-screen diagnostics: open with ?debug to see input events live.
+const DEBUG = new URLSearchParams(location.search).has('debug');
+const dbgLines = [];
+function dbg(msg) {
+  if (!DEBUG) return;
+  let el = document.getElementById('dbg-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'dbg-overlay';
+    el.style.cssText = 'position:fixed;top:60px;left:8px;z-index:999;font:10px monospace;color:#8f8;background:rgba(0,0,0,0.7);padding:6px;border-radius:6px;pointer-events:none;max-width:70vw;white-space:pre;';
+    document.body.appendChild(el);
+  }
+  dbgLines.push(`${(performance.now() / 1000).toFixed(1)} ${msg}`);
+  while (dbgLines.length > 14) dbgLines.shift();
+  el.textContent = dbgLines.join('\n');
+}
+
 async function boot() {
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
@@ -146,7 +163,7 @@ async function boot() {
     encounters.onBranchChosen = (to) => transitionTo(to, 60);
     encounters.onClassChosen = (classId) => {
       player.applyClass(classId, classes[classId]);
-      attackBtn.hidden = false;
+      setVisible(attackBtn, true);
     };
     projectiles.length = 0;
     camera.nearestFlaggedDistance = () => encounters.nearestFlaggedDistance(player.x);
@@ -163,7 +180,7 @@ async function boot() {
     saveManager.applyTo(player, snap);
     if (snap.player.classId) {
       player.applyClass(snap.player.classId, classes[snap.player.classId]);
-      attackBtn.hidden = false;
+      setVisible(attackBtn, true);
     }
     if (snap.world?.timeOfDay != null) dayNight.phase = snap.world.timeOfDay;
     scene.encounters.applyFlags(snap.world?.flags);
@@ -185,22 +202,41 @@ async function boot() {
   function bindTap(el, fn) {
     if (!el) return;
     let last = 0;
-    const h = () => {
+    const h = (e) => {
+      dbg(`tap ${el.id} via ${e.type}`);
       const now = performance.now();
       if (now - last < 400) return;
       last = now;
       fn();
     };
     // Whatever this browser actually delivers, one of these fires; dedupe
-    // makes multiple deliveries harmless. click is the universal fallback.
+    // makes multiple deliveries harmless.
     el.addEventListener('pointerdown', h);
     el.addEventListener('touchstart', h, { passive: true });
+    el.addEventListener('touchend', h, { passive: true });
     el.addEventListener('click', h);
   }
 
+  // Show/hide buttons WITHOUT display:none churn — iOS drops taps on
+  // elements whose display is toggled mid-gesture, and we were reassigning
+  // hidden 120×/s. Class-based visibility, mutated only on state change.
+  function setVisible(el, on) {
+    if (!el) return;
+    if (el.hidden) el.hidden = false;           // one-time handoff from markup
+    const off = el.classList.contains('gone');
+    if (on && off) el.classList.remove('gone');
+    else if (!on && !off) el.classList.add('gone');
+  }
+
   const contextBtn = document.getElementById('context-btn');
-  bindTap(contextBtn, () => { if (!dialogue.blocking) input.pressInteract(); });
-  bindTap(attackBtn, () => { if (!dialogue.blocking) input.pressAttack(); });
+  bindTap(contextBtn, () => {
+    dbg(`E pressed blocking=${dialogue.blocking}`);
+    if (!dialogue.blocking) input.pressInteract();
+  });
+  bindTap(attackBtn, () => {
+    dbg(`ATK pressed blocking=${dialogue.blocking}`);
+    if (!dialogue.blocking) input.pressAttack();
+  });
 
   // combat defeat → resume at most recent checkpoint (Amendment 01 §A.2)
   let respawning = false;
@@ -280,6 +316,7 @@ async function boot() {
       scene.intro?.update(dt);
       if (!scene.intro) {
         scene.encounters.update(dt, inp);
+        if (inp.interactPressed) dbg(`interact tick near=${!!(scene.town?.nearService || scene.encounters.nearInteractable)} blk=${dialogue.blocking}`);
         scene.town?.update(dt, inp.interactPressed && !dialogue.blocking);
         // towns are non-combat zones (§8): weapons suppressed inside
         if (inp.attackPressed && player.classDef && !dialogue.blocking && !scene.town?.inTown) {
@@ -304,13 +341,12 @@ async function boot() {
         transitionTo(exit.to, 60);
       }
 
-      journeyBtn.hidden = !(
+      setVisible(journeyBtn,
         scene.checkpoints.some(cp => cp.reached && Math.abs(player.x - cp.x) < 80)
-        || scene.town?.inTown   // the town IS a checkpoint (§A.1)
-      );
+        || scene.town?.inTown);   // the town IS a checkpoint (§A.1)
       const nearAct = !!scene.town?.nearService || !!scene.encounters.nearInteractable;
-      contextBtn.hidden = !nearAct;
-      attackBtn.hidden = !player.classDef || scene.town?.inTown || nearAct;
+      setVisible(contextBtn, nearAct);
+      setVisible(attackBtn, !!player.classDef && !scene.town?.inTown && !nearAct);
     },
     (alpha) => {
       const [sx, sy] = scene.intro?.shakeOffset() ?? [0, 0];

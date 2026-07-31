@@ -399,3 +399,13 @@
 #demo-controls button, .jp-row button, .dialogue-choice {
   touch-action: manipulation;
 }
+
+/* Class-based visibility (no display churn — iOS tap reliability) */
+#attack-btn.gone, #context-btn.gone, #journey-btn.gone {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.92);
+}
+#attack-btn, #context-btn, #journey-btn {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}

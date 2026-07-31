@@ -30,6 +30,7 @@ export class EncounterManager {
     }));
     this._tension = false;
     this._combat = false;
+    this.nearInteractable = null;   // drives the mobile context button
     this.creatures = [];
     this.onClassChosen = null;   // main provides (classId) => void
     this.onBranchChosen = null;  // main provides (biomeId) => void (§C multi-path)
@@ -52,6 +53,7 @@ export class EncounterManager {
     const p = this.player;
     let maxX = this.endX ?? Infinity;   // the journey's current edge
     let anyNear = false;
+    this.nearInteractable = null;
 
     for (const e of this.encounters) {
       if (e.sparkle > 0) e.sparkle -= dt;
@@ -92,7 +94,9 @@ export class EncounterManager {
       }
 
       if (e.type === 'lock') {
-        if (!e.resolved && Math.abs(dist) < 44 && input.interactPressed && !e._dialogueOpen) {
+        if (!e.resolved && Math.abs(dist) < 44) this.nearInteractable = e;
+        const blocked = this.dialogue?.blocking ?? false;
+        if (!e.resolved && Math.abs(dist) < 44 && input.interactPressed && !blocked && !e._dialogueOpen) {
           e._dialogueOpen = true;
           this._runLock(e).finally(() => { e._dialogueOpen = false; });
         }

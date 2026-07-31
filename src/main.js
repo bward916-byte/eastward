@@ -297,9 +297,9 @@ async function boot() {
         scene.checkpoints.some(cp => cp.reached && Math.abs(player.x - cp.x) < 80)
         || scene.town?.inTown   // the town IS a checkpoint (§A.1)
       );
-      const nearSvc = !!scene.town?.nearService;
-      contextBtn.hidden = !nearSvc;
-      attackBtn.hidden = !player.classDef || scene.town?.inTown || nearSvc;
+      const nearAct = !!scene.town?.nearService || !!scene.encounters.nearInteractable;
+      contextBtn.hidden = !nearAct;
+      attackBtn.hidden = !player.classDef || scene.town?.inTown || nearAct;
     },
     (alpha) => {
       const [sx, sy] = scene.intro?.shakeOffset() ?? [0, 0];

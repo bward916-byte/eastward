@@ -10,6 +10,8 @@ export class HudRenderer {
     this.stateEl = document.getElementById('hud-state');
     this.portrait = document.getElementById('hud-portrait');
     this.saveIcon = document.getElementById('save-indicator');
+    this.artifactWrap = document.getElementById('artifact-counter');
+    this.artifactCount = document.getElementById('artifact-count');
     this._saveTimer = null;
   }
 
@@ -23,6 +25,11 @@ export class HudRenderer {
   }
 
   update(player) {
+    if (this.artifactWrap) {
+      const n = player.artifacts ?? 0;
+      this.artifactWrap.hidden = n === 0;
+      this.artifactCount.textContent = n;
+    }
     const stamPct = player.stamina;                       // out of 100
     const endPct = player.endurance;
     this.stamina.style.width = stamPct + '%';

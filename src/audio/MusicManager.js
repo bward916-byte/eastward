@@ -29,6 +29,7 @@ export class MusicManager {
     bus.on('combatStarted', () => this.setLayer('combat', 0.85, 1.2));
     bus.on('combatEnded', () => this.setLayer('combat', 0, 3));
     bus.on('gameSaved', () => this.sting('checkpoint'));
+    bus.on('interestCollected', () => this.sting('pickup'));
   }
 
   playBiome(audioDef, id) {
@@ -51,6 +52,20 @@ export class MusicManager {
   sting(kind) {
     const e = this.engine;
     if (!e.ready) return;
+    if (kind === 'pickup') {
+      const root = (this.current?.def.root ?? 57) + 24;
+      const t = e.now;
+      const o = e.ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(e.midiToFreq(root), t);
+      o.frequency.linearRampToValueAtTime(e.midiToFreq(root + 5), t + 0.09);
+      const g = e.ctx.createGain();
+      g.gain.setValueAtTime(0.12, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+      o.connect(g); g.connect(e.musicBus);
+      o.start(t); o.stop(t + 0.8);
+      return;
+    }
     if (kind === 'checkpoint') {
       // soft two-note bell: root + fifth an octave up
       const root = (this.current?.def.root ?? 57) + 12;

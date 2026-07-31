@@ -17,6 +17,7 @@ import { Checkpoint } from './world/Checkpoint.js';
 import { DayNightCycle } from './world/DayNightCycle.js';
 import { WindSystem } from './world/WindSystem.js';
 import { WeatherSystem } from './world/WeatherSystem.js';
+import { EncounterManager } from './world/EncounterManager.js';
 import { ParallaxRenderer } from './render/ParallaxRenderer.js';
 import { HudRenderer } from './render/HudRenderer.js';
 import { Dialogue } from './systems/Dialogue.js';
@@ -41,6 +42,7 @@ async function boot() {
   const input = new InputManager();
   const hud = new HudRenderer();
   const dialogue = new Dialogue();
+  input.touchBlocked = () => dialogue.active;
   const saveManager = new SaveManager(player);
 
   const audio = new AudioEngine();
@@ -61,7 +63,10 @@ async function boot() {
   const dayNight = new DayNightCycle();
   const wind = new WindSystem();
   const weather = new WeatherSystem();
-  saveManager.getWorldState = () => ({ timeOfDay: dayNight.phase });
+  saveManager.getWorldState = () => ({
+    timeOfDay: dayNight.phase,
+    flags: scene?.encounters?.getFlags() ?? [],
+  });
 
   let scene = null;
 
@@ -95,8 +100,10 @@ async function boot() {
     wind.setBiome(biome.wind);
     weather.setBiome(biome.weather);
     const env = biome.environment ?? { dayNight: true, weather: true };
+    const encounters = new EncounterManager(biome.encounters, terrain, player, dialogue);
+    camera.nearestFlaggedDistance = () => encounters.nearestFlaggedDistance(player.x);
     scene = {
-      id, biome, terrain, intro, checkpoints, env,
+      id, biome, terrain, intro, checkpoints, env, encounters,
       parallax: new ParallaxRenderer(biome, terrain),
     };
   }
@@ -107,6 +114,7 @@ async function boot() {
     await loadScene(snap.biome ?? 'meadow', snap.player.x);
     saveManager.applyTo(player, snap);
     if (snap.world?.timeOfDay != null) dayNight.phase = snap.world.timeOfDay;
+    scene.encounters.applyFlags(snap.world?.flags);
     player.y = scene.terrain.groundYAt(player.x);
     player.prevX = player.x; player.prevY = player.y;
     for (const cp of scene.checkpoints) {
@@ -148,6 +156,7 @@ async function boot() {
 
       player.update(dt, input, scene.terrain);
       scene.intro?.update(dt);
+      if (!scene.intro) scene.encounters.update(dt, input);
       for (const cp of scene.checkpoints) cp.update(dt, player);
       camera.update(dt, player);
       scene.parallax.update(dt);
@@ -161,6 +170,7 @@ async function boot() {
       camera.applyTransform(ctx);
       ctx.translate(sx / camera.zoom, sy / camera.zoom);
       for (const cp of scene.checkpoints) cp.render(ctx, worldTime);
+      scene.encounters.render(ctx, worldTime);
       scene.intro?.renderWorld(ctx);
       player.render(ctx, alpha);
       scene.parallax.renderForeground(ctx, camera);

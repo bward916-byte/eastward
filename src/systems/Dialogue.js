@@ -11,9 +11,13 @@ export class Dialogue {
     this.speakerEl = document.getElementById('dialogue-speaker');
     this.textEl = document.getElementById('dialogue-text');
     this._advance = null;
+    this.active = false;
 
     const tryAdvance = () => { if (this._advance) this._advance(); };
     this.box?.addEventListener('pointerdown', (e) => { e.stopPropagation(); tryAdvance(); });
+    // While a dialogue is open, a tap ANYWHERE advances it (the InputManager
+    // suppresses its touch jump/move zones when active — see touchBlocked)
+    window.addEventListener('pointerdown', () => { if (this.active) tryAdvance(); });
     window.addEventListener('keydown', (e) => {
       if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') tryAdvance();
     });
@@ -26,6 +30,7 @@ export class Dialogue {
    */
   async say(lines, { speaker = '', autoMs = 0 } = {}) {
     if (!this.box) return; // headless/testing
+    this.active = true;
     this.box.hidden = false;
     this.speakerEl.textContent = speaker;
     this.speakerEl.style.display = speaker ? '' : 'none';
@@ -65,5 +70,40 @@ export class Dialogue {
     });
   }
 
-  hide() { if (this.box) this.box.hidden = true; this._advance = null; }
+  /**
+   * Show lines, then present tappable choices on the last screen.
+   * Resolves with the chosen index. Used by Adventure encounters (§4).
+   */
+  async ask(lines, options, { speaker = '' } = {}) {
+    if (!this.box) return 0; // headless
+    if (lines.length > 1) await this.say(lines.slice(0, -1), { speaker });
+    this.active = true;
+    this.box.hidden = false;
+    this.speakerEl.textContent = speaker;
+    this.speakerEl.style.display = speaker ? '' : 'none';
+    this.textEl.textContent = lines[lines.length - 1];
+
+    const wrap = document.getElementById('dialogue-choices');
+    wrap.innerHTML = '';
+    return new Promise((resolve) => {
+      options.forEach((label, idx) => {
+        const b = document.createElement('button');
+        b.className = 'dialogue-choice';
+        b.textContent = label;
+        b.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+          wrap.innerHTML = '';
+          this.hide();
+          resolve(idx);
+        });
+        wrap.appendChild(b);
+      });
+    });
+  }
+
+  hide() {
+    if (this.box) this.box.hidden = true;
+    this._advance = null;
+    this.active = false;
+  }
 }

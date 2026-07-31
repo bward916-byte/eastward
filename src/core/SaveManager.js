@@ -44,6 +44,7 @@ export class SaveManager {
         facing: this.player.facing,
         stamina: this.player.stamina,
         endurance: this.player.endurance,
+        artifacts: this.player.artifacts,
       },
       // Reserved for later phases (schema stability — Amendment 01 §A.4):
       // health/injuries/sickness (§12), inventory, equipment, skills, class,
@@ -77,6 +78,7 @@ export class SaveManager {
     player.facing = snap.player.facing ?? 1;
     player.stamina = snap.player.stamina ?? 100;
     player.endurance = snap.player.endurance ?? 100;
+    player.artifacts = snap.player.artifacts ?? 0;
   }
 
   _migrate(snap) {

@@ -140,5 +140,42 @@
     "gust": 0.2,
     "rain": 0.2,
     "fog": 0.15
-  }
+  },
+  "encounters": [
+    {
+      "id": "mdw-traveler",
+      "type": "adventure",
+      "x": 1250,
+      "speaker": "Traveler",
+      "lines": [
+        "You there \u2014 small one. Alone on this road?",
+        "A family passed through two days back. Worn out, asking after a child. They pressed on east, toward the pass.",
+        "It's a hard road ahead. What will you do?"
+      ],
+      "choices": [
+        "Press on after them",
+        "Ask what else they said"
+      ],
+      "responses": [
+        "Then walk fast and rest when you must. East, always east.",
+        "Only that they'd wait where they could. Look for signs at the waysides \u2014 cairns, shrines. Travelers leave word there."
+      ]
+    },
+    {
+      "id": "mdw-relic-1",
+      "type": "interest",
+      "x": 2450
+    },
+    {
+      "id": "mdw-fallen-tree",
+      "type": "challenge",
+      "kind": "push",
+      "x": 4150
+    },
+    {
+      "id": "mdw-relic-2",
+      "type": "interest",
+      "x": 5250
+    }
+  ]
 }

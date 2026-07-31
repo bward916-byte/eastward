@@ -64,6 +64,7 @@ export class Player {
     // §7 Climbing skill (1 = untrained). Trainer raises this in Phase 6/7:
     // higher = faster climb, less drain, (later) higher max angle & grip.
     this.climbSkill = 1.0;
+    this.artifacts = 0;        // unidentified '???' artifacts held (§8)
     // §3.6 permanent progression + §13.3 wind hooks (later phases fill these)
     this.speedBonus = 1.0;
     this.windSpeedMod = 1.0;

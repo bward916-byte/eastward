@@ -1,0 +1,67 @@
+{
+  "id": "forest",
+  "name": "THE DEEPWOOD",
+  "palette": {
+    "skyTop": "#6a9ac4",
+    "skyBottom": "#c9d8a8",
+    "sun": "#f0e8b8",
+    "l2Base": "#3d5a3a",
+    "l2Accent": "#4a6a44",
+    "l3Base": "#2c4429",
+    "l3Accent": "#38542f",
+    "l4Base": "#1f3320",
+    "l4Accent": "#2a4227",
+    "l5Base": "#16241a",
+    "l5Accent": "#1e2f20",
+    "groundTop": "#3a5c34",
+    "groundDeep": "#2c4428",
+    "dirt": "#5c4a34",
+    "fogTint": "rgba(180, 200, 160, 0.14)"
+  },
+  "layerScroll": { "l2": 0.05, "l3": 0.15, "l4": 0.35, "l5": 0.8 },
+  "layerStyle": { "treeStep": 56 },
+  "groundY": 520,
+  "grassDensity": 0.08,
+  "terrain": {
+    "points": [
+      [0, 520], [700, 510], [1500, 522], [2100, 515], [2350, 600], [2600, 610],
+      [2900, 520], [3400, 512], [3900, 518], [4600, 505], [5100, 460],
+      [5260, 615], [5500, 620], [5800, 560], [6100, 540], [6800, 525], [7600, 520]
+    ]
+  },
+  "endX": 7200,
+  "environment": { "dayNight": true, "weather": true },
+  "wind": { "base": 0.06, "gustiness": 0.25, "prevailing": 1 },
+  "weather": { "clear": 0.35, "fog": 0.3, "rain": 0.25, "gust": 0.1 },
+  "audio": {
+    "root": 52, "mode": "minorPent", "tempo": 58,
+    "chord": [40, 47, 52, 59, 64],
+    "brightness": 900, "pluckDensity": 0.3, "windBase": 0.07
+  },
+  "checkpoints": [
+    { "id": "forest-gate", "x": 200, "type": "cairn" },
+    { "id": "forest-shrine", "x": 3300, "type": "shrine" },
+    { "id": "forest-camp", "x": 5900, "type": "campfire" }
+  ],
+  "encounters": [
+    {
+      "id": "fst-woodcutter", "type": "adventure", "x": 900,
+      "speaker": "Woodcutter",
+      "lines": [
+        "Small roads bring small travelers. You're the one they asked after.",
+        "A family — worn thin, hopeful. Camped here three nights past, then east through the hollow.",
+        "Mind the wood past the shrine. The boars are foul-tempered this season."
+      ],
+      "choices": ["Thank him and press on", "Ask about the hollow"],
+      "responses": [
+        "East, then. Walk loud — the wood dislikes surprises.",
+        "Low ground, wet ground. A tree came down across the path — you'll need your shoulder."
+      ]
+    },
+    { "id": "fst-relic-1", "type": "interest", "x": 1600 },
+    { "id": "fst-fallen-oak", "type": "challenge", "kind": "push", "x": 2750 },
+    { "id": "fst-boars", "type": "creature", "kind": "boar", "count": 2, "x": 3900 },
+    { "id": "fst-relic-2", "type": "interest", "x": 4600 },
+    { "id": "fst-wolves", "type": "creature", "kind": "wolf", "count": 3, "x": 6400 }
+  ]
+}

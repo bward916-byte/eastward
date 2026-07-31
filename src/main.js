@@ -80,6 +80,32 @@ async function boot() {
   });
 
   let scene = null;
+  let sceneFade = 0;          // 0 = clear, 1 = black (biome transitions)
+  let transitioning = false;
+  const biomeLabel = document.getElementById('biome-label');
+
+  function showBiomeName(name) {
+    if (!biomeLabel || !name) return;
+    biomeLabel.textContent = name;
+    biomeLabel.classList.add('visible');
+    setTimeout(() => biomeLabel.classList.remove('visible'), 3200);
+  }
+
+  async function transitionTo(id, spawnX) {
+    if (transitioning) return;
+    transitioning = true;
+    const fadeOut = setInterval(() => { sceneFade = Math.min(1, sceneFade + 0.07); }, 30);
+    await new Promise(r => setTimeout(r, 480));
+    clearInterval(fadeOut);
+    sceneFade = 1;
+    await loadScene(id, spawnX);
+    bus.emit('biomeTransition', { to: id });
+    showBiomeName(scene.biome.name);
+    const fadeIn = setInterval(() => {
+      sceneFade = Math.max(0, sceneFade - 0.06);
+      if (sceneFade <= 0) { clearInterval(fadeIn); transitioning = false; }
+    }, 30);
+  }
 
   async function loadScene(id, spawnX) {
     const biome = await fetch(`data/biomes/${id}.json`).then(r => r.json());
@@ -112,7 +138,7 @@ async function boot() {
     weather.setBiome(biome.weather);
     const env = biome.environment ?? { dayNight: true, weather: true };
     const town = biome.town ? new Town(biome.town, terrain, player, dialogue, dayNight) : null;
-    const encounters = new EncounterManager(biome.encounters, terrain, player, dialogue);
+    const encounters = new EncounterManager(biome.encounters, terrain, player, dialogue, biome.endX ?? null);
     encounters.onClassChosen = (classId) => {
       player.applyClass(classId, classes[classId]);
       attackBtn.hidden = false;
@@ -235,6 +261,12 @@ async function boot() {
       player.xp = xpManager.xp;
       player.level = xpManager.level;
       hud.xpProgress = xpManager.progress;
+      // biome chaining: crossing the authored east exit moves the journey on (§13)
+      const exit = scene.biome.exitEast;
+      if (exit && !transitioning && player.x >= exit.x) {
+        transitionTo(exit.to, 60);
+      }
+
       journeyBtn.hidden = !(
         scene.checkpoints.some(cp => cp.reached && Math.abs(player.x - cp.x) < 80)
         || scene.town?.inTown   // the town IS a checkpoint (§A.1)
@@ -260,6 +292,11 @@ async function boot() {
       scene.parallax.renderForeground(ctx, camera);
       ctx.restore();
       if (scene.env.weather) weather.render(ctx, camera, wind.value);
+      if (sceneFade > 0) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = `rgba(6, 8, 12, ${sceneFade})`;
+        ctx.fillRect(0, 0, camera.viewW, camera.viewH);
+      }
       if (scene.env.dayNight) dayNight.renderOverlay(ctx, camera);
       scene.intro?.renderOverlay(ctx, camera);
       ctx.setTransform(1, 0, 0, 1, 0, 0);

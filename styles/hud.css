@@ -313,3 +313,20 @@
 }
 #context-btn[hidden] { display: none; }
 #context-btn:active { background: rgba(216, 201, 138, 0.3); }
+
+/* Biome name banner on entry */
+#biome-label {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  transform: translateX(-50%);
+  font-size: 26px;
+  letter-spacing: 8px;
+  color: rgba(240, 236, 214, 0.92);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 1.1s ease;
+  pointer-events: none;
+  user-select: none;
+}
+#biome-label.visible { opacity: 1; }

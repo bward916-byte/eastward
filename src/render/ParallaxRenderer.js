@@ -18,6 +18,7 @@ export class ParallaxRenderer {
     this.terrain = terrain;
     this.windTime = 0;
     this.windStrength = 0.2;  // live, set from WindSystem each frame
+    this.treeStep = biome.layerStyle?.treeStep ?? 90;
   }
 
   setWind(s) { this.windStrength = s; }
@@ -146,7 +147,7 @@ export class ParallaxRenderer {
     const off = camera.x * scroll * camera.zoom;
     const w = camera.viewW, h = camera.viewH;
     const baseY = h * 0.74 + (1 - camera.zoom) * 60;
-    const step = 90;
+    const step = this.treeStep;
     const start = Math.floor(off / step) * step;
     for (let wx = start - step * 2; wx < off + w + step * 2; wx += step) {
       const r = hash(wx);

@@ -15,7 +15,8 @@ const PUSH_TIME = 2.4;      // seconds of pushing to clear the fallen tree
 const PUSH_DRAIN = 13;      // stamina/s while pushing
 
 export class EncounterManager {
-  constructor(defs, terrain, player, dialogue) {
+  constructor(defs, terrain, player, dialogue, endX = null) {
+    this.endX = endX;
     this.terrain = terrain;
     this.player = player;
     this.dialogue = dialogue;
@@ -48,7 +49,7 @@ export class EncounterManager {
 
   update(dt, input) {
     const p = this.player;
-    let maxX = Infinity;
+    let maxX = this.endX ?? Infinity;   // the journey's current edge
     let anyNear = false;
 
     for (const e of this.encounters) {
@@ -188,6 +189,25 @@ export class EncounterManager {
       if (e.sparkle > 0) this._renderSparkle(ctx, e, time);
     }
     for (const c of this.creatures) c.render(ctx);
+    if (this.endX != null) this._renderEdge(ctx, time);
+  }
+
+  _renderEdge(ctx, time) {
+    const x = this.endX + 30;
+    const y = this.terrain.groundYAt(x);
+    // wayside signpost pointing east
+    ctx.fillStyle = '#5a4632';
+    ctx.fillRect(x - 3, y - 46, 6, 46);
+    ctx.fillStyle = '#6d5b42';
+    ctx.beginPath();
+    ctx.moveTo(x - 6, y - 46); ctx.lineTo(x + 30, y - 46);
+    ctx.lineTo(x + 38, y - 39); ctx.lineTo(x + 30, y - 32); ctx.lineTo(x - 6, y - 32);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = `rgba(240, 236, 214, ${0.7 + Math.sin(time * 2) * 0.15})`;
+    ctx.font = '12px "Trebuchet MS", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('The pass lies ahead — the road continues soon…', x, y - 60);
+    ctx.textAlign = 'left';
   }
 
   _renderRite(ctx, e, time) {

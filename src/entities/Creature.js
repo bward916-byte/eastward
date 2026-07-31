@@ -11,6 +11,13 @@ const KINDS = {
     hp: 30, speed: 128, aggroR: 280, attackR: 42,
     windup: 0.5, lungeSpeed: 330, lungeTime: 0.32, damage: 12, cooldown: 1.3,
     targetableBy: ['melee', 'ground', 'air'],
+    body: '#5a5248', dark: '#443e36', bulk: 1,
+  },
+  boar: {
+    hp: 42, speed: 100, aggroR: 240, attackR: 48,
+    windup: 0.62, lungeSpeed: 410, lungeTime: 0.3, damage: 15, cooldown: 1.7,
+    targetableBy: ['melee', 'ground', 'air'],
+    body: '#6d5a48', dark: '#52443a', bulk: 1.25,
   },
 };
 
@@ -95,8 +102,9 @@ export class Creature {
     ctx.globalAlpha = this.fade;
     ctx.translate(this.x, this.y - 12 + crouch);
     ctx.scale(this.facing, 1);
-    const body = this.flash > 0 ? '#e8e8e8' : '#5a5248';
-    const dark = this.flash > 0 ? '#d0d0d0' : '#443e36';
+    const body = this.flash > 0 ? '#e8e8e8' : this.def.body;
+    const dark = this.flash > 0 ? '#d0d0d0' : this.def.dark;
+    const bulk = this.def.bulk ?? 1;
 
     // legs
     ctx.strokeStyle = dark;
@@ -112,7 +120,7 @@ export class Creature {
     // body
     ctx.fillStyle = body;
     ctx.beginPath();
-    ctx.ellipse(0, -2, 15, 7.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -2 - (bulk - 1) * 3, 15 * bulk, 7.5 * bulk, 0, 0, Math.PI * 2);
     ctx.fill();
     // head + snout + ear
     ctx.beginPath();
@@ -124,6 +132,13 @@ export class Creature {
     ctx.beginPath();
     ctx.moveTo(12, -11); ctx.lineTo(14, -16); ctx.lineTo(16.5, -11);
     ctx.closePath(); ctx.fill();
+    // boar tusks
+    if (this.kind === 'boar') {
+      ctx.fillStyle = '#e8e2d4';
+      ctx.beginPath();
+      ctx.moveTo(22, -4); ctx.lineTo(27, -9); ctx.lineTo(23.5, -3);
+      ctx.closePath(); ctx.fill();
+    }
     // tail
     ctx.strokeStyle = body;
     ctx.lineWidth = 3;

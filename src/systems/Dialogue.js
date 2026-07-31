@@ -14,11 +14,20 @@ export class Dialogue {
     this.active = false;
     this._closedAt = 0;
 
-    const tryAdvance = () => { if (this._advance) this._advance(); };
-    this.box?.addEventListener('pointerdown', (e) => { e.stopPropagation(); tryAdvance(); });
-    // While a dialogue is open, a tap ANYWHERE advances it (the InputManager
-    // suppresses its touch jump/move zones when active — see touchBlocked)
-    window.addEventListener('pointerdown', () => { if (this.active) tryAdvance(); });
+    let lastAdv = 0;
+    const tryAdvance = () => {
+      const now = performance.now();
+      if (now - lastAdv < 250) return;   // dedupe multi-event taps
+      lastAdv = now;
+      if (this._advance) this._advance();
+    };
+    for (const ev of ['pointerdown', 'click']) {
+      this.box?.addEventListener(ev, (e) => { e.stopPropagation(); tryAdvance(); });
+      // While open, a tap ANYWHERE advances (InputManager suppresses movement)
+      window.addEventListener(ev, () => { if (this.active) tryAdvance(); });
+    }
+    this.box?.addEventListener('touchstart', (e) => { e.stopPropagation(); tryAdvance(); }, { passive: true });
+    window.addEventListener('touchstart', () => { if (this.active) tryAdvance(); }, { passive: true });
     window.addEventListener('keydown', (e) => {
       if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') tryAdvance();
     });
@@ -91,12 +100,18 @@ export class Dialogue {
         const b = document.createElement('button');
         b.className = 'dialogue-choice';
         b.textContent = label;
-        b.addEventListener('pointerdown', (e) => {
+        let picked = false;
+        const choose = (e) => {
           e.stopPropagation();
+          if (picked) return;
+          picked = true;
           wrap.innerHTML = '';
           this.hide();
           resolve(idx);
-        });
+        };
+        b.addEventListener('pointerdown', choose);
+        b.addEventListener('touchstart', choose, { passive: true });
+        b.addEventListener('click', choose);
         wrap.appendChild(b);
       });
     });

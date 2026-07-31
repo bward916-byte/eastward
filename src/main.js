@@ -185,15 +185,17 @@ async function boot() {
   function bindTap(el, fn) {
     if (!el) return;
     let last = 0;
-    const h = (e) => {
-      if (e.cancelable) e.preventDefault();
+    const h = () => {
       const now = performance.now();
-      if (now - last < 350) return;
+      if (now - last < 400) return;
       last = now;
       fn();
     };
+    // Whatever this browser actually delivers, one of these fires; dedupe
+    // makes multiple deliveries harmless. click is the universal fallback.
     el.addEventListener('pointerdown', h);
-    el.addEventListener('touchstart', h, { passive: false });
+    el.addEventListener('touchstart', h, { passive: true });
+    el.addEventListener('click', h);
   }
 
   const contextBtn = document.getElementById('context-btn');
@@ -225,6 +227,15 @@ async function boot() {
       input.update(dt);
       demo.update(dt);
       const inp = demo.active ? demo.scriptInput : input;
+
+      // Mobile-first interact: standing at a service/vault, a right-side tap
+      // means "use it", not "jump" — the E button becomes optional.
+      if (!demo.active && input.jumpPressed && !dialogue.blocking
+          && (scene?.town?.nearService || scene?.encounters?.nearInteractable)) {
+        input.jumpPressed = false;
+        input.jumpHeld = false;
+        input.interactPressed = true;
+      }
 
       // environment (§13.3/§13.4) + the aging clock (§5: time, not distance)
       if (scene.env.dayNight) {

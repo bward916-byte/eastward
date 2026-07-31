@@ -29,7 +29,7 @@ async function boot() {
   window.addEventListener('resize', resize);
   resize();
 
-  const terrain = new TerrainSpline(biome.groundY);
+  const terrain = new TerrainSpline(biome);
   const player = new Player(120, terrain.groundYAt(120));
   const input = new InputManager();
   const parallax = new ParallaxRenderer(biome, terrain);

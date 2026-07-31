@@ -6,6 +6,7 @@ import { InputManager } from './core/InputManager.js';
 import { Camera } from './core/Camera.js';
 import { SaveManager } from './core/SaveManager.js';
 import { bus } from './core/EventBus.js';
+import { OrientationGate } from './core/OrientationGate.js';
 import { Player } from './entities/Player.js';
 import { TerrainSpline } from './world/TerrainSpline.js';
 import { Checkpoint } from './world/Checkpoint.js';
@@ -75,7 +76,16 @@ async function boot() {
       hud.update(player);
     }
   );
-  loop.start();
+  // Landscape required (Amendment 02 §E): loop only runs while landscape;
+  // portrait shows the rotate prompt and halts simulation, resume is instant.
+  new OrientationGate((isLandscape) => {
+    if (isLandscape) {
+      resize(); // dimensions change on rotate
+      loop.start();
+    } else {
+      loop.stop();
+    }
+  });
 }
 
 boot();

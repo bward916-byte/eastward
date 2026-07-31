@@ -18,7 +18,9 @@ export class GameLoop {
   }
 
   start() {
+    if (this.running) return;
     this.running = true;
+    this.accumulator = 0;          // drop portrait-time backlog on resume
     this.lastTime = performance.now();
     requestAnimationFrame(this._frame);
   }

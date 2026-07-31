@@ -67,6 +67,7 @@ export class Player {
     // §3.6 permanent progression + §13.3 wind hooks (later phases fill these)
     this.speedBonus = 1.0;
     this.windSpeedMod = 1.0;
+    this.windValue = 0;        // signed live wind, drifts jump arcs (§13.3)
 
     this.animTime = 0;
     this.slopeAngle = 0;       // signed, cached for render lean
@@ -190,6 +191,7 @@ export class Player {
         this.vy += JUMP_HOLD_BOOST * dt;
         this._jumpHoldTime += dt;
       }
+      this.vx += this.windValue * 22 * dt;   // wind drifts airborne arcs
       this.vy += GRAVITY * dt;
       this.y += this.vy * dt;
       const g = terrain.groundYAt(this.x);

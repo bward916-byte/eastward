@@ -125,5 +125,20 @@
     "brightness": 1400,
     "pluckDensity": 0.45,
     "windBase": 0.09
+  },
+  "environment": {
+    "dayNight": true,
+    "weather": true
+  },
+  "wind": {
+    "base": 0.12,
+    "gustiness": 0.4,
+    "prevailing": 1
+  },
+  "weather": {
+    "clear": 0.45,
+    "gust": 0.2,
+    "rain": 0.2,
+    "fog": 0.15
   }
 }

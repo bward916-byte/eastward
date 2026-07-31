@@ -17,6 +17,7 @@ export class SaveManager {
     this.player = player;
     this.lastCheckpointId = null;
     this.biomeId = 'meadow';
+    this.getWorldState = null;   // main provides () => ({ timeOfDay, ... })
 
     // '?new' in the URL starts a fresh journey (clears the rolling slot)
     if (new URLSearchParams(location.search).has('new')) {
@@ -36,6 +37,7 @@ export class SaveManager {
       version: SCHEMA_VERSION,
       checkpointId,
       biome: this.biomeId,
+      world: this.getWorldState?.() ?? {},
       savedAt: Date.now(),
       player: {
         x: this.player.x,

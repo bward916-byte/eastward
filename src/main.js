@@ -14,6 +14,9 @@ import { TerrainSpline } from './world/TerrainSpline.js';
 import { IntroTerrain } from './world/IntroTerrain.js';
 import { IntroSequence } from './world/IntroSequence.js';
 import { Checkpoint } from './world/Checkpoint.js';
+import { DayNightCycle } from './world/DayNightCycle.js';
+import { WindSystem } from './world/WindSystem.js';
+import { WeatherSystem } from './world/WeatherSystem.js';
 import { ParallaxRenderer } from './render/ParallaxRenderer.js';
 import { HudRenderer } from './render/HudRenderer.js';
 import { Dialogue } from './systems/Dialogue.js';
@@ -55,6 +58,11 @@ async function boot() {
     if (e.key === 'm' || e.key === 'M') audio.toggleMute();
   });
 
+  const dayNight = new DayNightCycle();
+  const wind = new WindSystem();
+  const weather = new WeatherSystem();
+  saveManager.getWorldState = () => ({ timeOfDay: dayNight.phase });
+
   let scene = null;
 
   async function loadScene(id, spawnX) {
@@ -84,8 +92,11 @@ async function boot() {
     saveManager.setBiome(id);
     music.playBiome(biome.audio, id);
     ambient.setBiome(biome.audio);
+    wind.setBiome(biome.wind);
+    weather.setBiome(biome.weather);
+    const env = biome.environment ?? { dayNight: true, weather: true };
     scene = {
-      id, biome, terrain, intro, checkpoints,
+      id, biome, terrain, intro, checkpoints, env,
       parallax: new ParallaxRenderer(biome, terrain),
     };
   }
@@ -95,6 +106,7 @@ async function boot() {
   if (snap) {
     await loadScene(snap.biome ?? 'meadow', snap.player.x);
     saveManager.applyTo(player, snap);
+    if (snap.world?.timeOfDay != null) dayNight.phase = snap.world.timeOfDay;
     player.y = scene.terrain.groundYAt(player.x);
     player.prevX = player.x; player.prevY = player.y;
     for (const cp of scene.checkpoints) {
@@ -108,10 +120,32 @@ async function boot() {
   bus.on('gameSaved', () => hud.flashSaved());
 
   let worldTime = 0;
+  let audioSync = 0;
   const loop = new GameLoop(
     (dt) => {
       worldTime += dt;
       input.update(dt);
+
+      // environment (§13.3/§13.4)
+      if (scene.env.dayNight) dayNight.update(dt);
+      if (scene.env.weather) {
+        wind.update(dt, weather.windBoost);
+        weather.update(dt, wind, camera);
+        player.windSpeedMod = wind.speedModFor(input.moveDir) * weather.speedMod;
+        player.windValue = wind.value;
+        scene.parallax.setWind(Math.min(1, wind.strength + weather.rainLevel * 0.2));
+      } else {
+        player.windSpeedMod = 1;
+        player.windValue = 0;
+        scene.parallax.setWind(0.35); // scripted night breeze
+      }
+      audioSync += dt;
+      if (audioSync > 0.5) {
+        audioSync = 0;
+        ambient.setWind(scene.env.weather ? wind.strength : 0.4);
+        ambient.setRain(scene.env.weather ? weather.rainLevel : 0);
+      }
+
       player.update(dt, input, scene.terrain);
       scene.intro?.update(dt);
       for (const cp of scene.checkpoints) cp.update(dt, player);
@@ -123,7 +157,7 @@ async function boot() {
       const [sx, sy] = scene.intro?.shakeOffset() ?? [0, 0];
       ctx.save();
       ctx.translate(sx, sy);
-      scene.parallax.render(ctx, camera);
+      scene.parallax.render(ctx, camera, scene.env.dayNight ? dayNight : null);
       camera.applyTransform(ctx);
       ctx.translate(sx / camera.zoom, sy / camera.zoom);
       for (const cp of scene.checkpoints) cp.render(ctx, worldTime);
@@ -131,6 +165,8 @@ async function boot() {
       player.render(ctx, alpha);
       scene.parallax.renderForeground(ctx, camera);
       ctx.restore();
+      if (scene.env.weather) weather.render(ctx, camera, wind.value);
+      if (scene.env.dayNight) dayNight.renderOverlay(ctx, camera);
       scene.intro?.renderOverlay(ctx, camera);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       hud.update(player);

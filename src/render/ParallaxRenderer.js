@@ -4,6 +4,8 @@
 // L6 ground. Placement is deterministic per world segment so scenery is stable
 // as the camera scrolls. Foliage sway is a shared-timer sine (§13.2 preview).
 
+import { lerpColor, clamp } from '../core/utils.js';
+
 // Deterministic pseudo-random from an integer seed.
 function hash(n) {
   let x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
@@ -15,29 +17,75 @@ export class ParallaxRenderer {
     this.biome = biome;
     this.terrain = terrain;
     this.windTime = 0;
+    this.windStrength = 0.2;  // live, set from WindSystem each frame
   }
 
-  update(dt) { this.windTime += dt; }
+  setWind(s) { this.windStrength = s; }
 
-  render(ctx, camera) {
+  update(dt) { this.windTime += dt * (0.7 + this.windStrength * 2.6); }
+
+  render(ctx, camera, cycle = null) {
     const p = this.biome.palette;
     const w = camera.viewW, h = camera.viewH;
 
-    // ---------- L1 sky (screen space) ----------
+    // ---------- L1 sky (screen space), day/night blended (§13.4) ----------
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    let top = p.skyTop, bottom = p.skyBottom;
+    if (cycle) {
+      const light = cycle.light;
+      top = lerpColor('#0a0f1e', p.skyTop, light);
+      bottom = lerpColor('#141a2e', p.skyBottom, light);
+      if (cycle.duskWarmth > 0.02) bottom = lerpColor(bottom, '#e8975c', cycle.duskWarmth * 0.65);
+    }
     const sky = ctx.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, p.skyTop);
-    sky.addColorStop(1, p.skyBottom);
+    sky.addColorStop(0, top);
+    sky.addColorStop(1, bottom);
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
 
-    // sun
-    const sunX = w * 0.78, sunY = h * 0.2;
-    const sunG = ctx.createRadialGradient(sunX, sunY, 6, sunX, sunY, 90);
-    sunG.addColorStop(0, p.sun);
-    sunG.addColorStop(1, 'rgba(255,243,196,0)');
-    ctx.fillStyle = sunG;
-    ctx.fillRect(sunX - 90, sunY - 90, 180, 180);
+    if (cycle) {
+      // stars fade in at night (deterministic field)
+      if (cycle.light < 0.55) {
+        const a = (0.55 - cycle.light) / 0.55;
+        ctx.fillStyle = `rgba(230, 236, 248, ${a * 0.85})`;
+        for (let i = 0; i < 70; i++) {
+          const sx = hash(i * 13.7) * w;
+          const sy = hash(i * 7.3 + 5) * h * 0.55;
+          const tw = 0.6 + Math.sin(this.windTime * 1.5 + i) * 0.4;
+          ctx.fillRect(sx, sy, 1.4 * tw, 1.4 * tw);
+        }
+      }
+      // sun arcs across the day sky
+      if (cycle.sunAlt > -0.12) {
+        const dayT = clamp((cycle.phase - 0.25) / 0.5, 0, 1);
+        const sunX = w * (0.1 + dayT * 0.8);
+        const sunY = h * (0.42 - cycle.sunAlt * 0.3);
+        const warm = lerpColor('#ffd9a0', p.sun, clamp(cycle.sunAlt * 2, 0, 1));
+        const sunG = ctx.createRadialGradient(sunX, sunY, 6, sunX, sunY, 90);
+        sunG.addColorStop(0, warm);
+        sunG.addColorStop(1, 'rgba(255,220,160,0)');
+        ctx.fillStyle = sunG;
+        ctx.fillRect(sunX - 90, sunY - 90, 180, 180);
+      }
+      // moon on the night arc
+      if (cycle.light < 0.4) {
+        const nightT = clamp(((cycle.phase + 0.25) % 1) / 0.5, 0, 1);
+        const mx = w * (0.1 + nightT * 0.8);
+        const my = h * (0.42 + cycle.sunAlt * 0.3);
+        ctx.fillStyle = `rgba(222, 228, 240, ${(0.4 - cycle.light) * 2.2})`;
+        ctx.beginPath();
+        ctx.arc(mx, my, 14, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      // static authored sky (intro / scripted scenes)
+      const sunX = w * 0.78, sunY = h * 0.2;
+      const sunG = ctx.createRadialGradient(sunX, sunY, 6, sunX, sunY, 90);
+      sunG.addColorStop(0, p.sun);
+      sunG.addColorStop(1, 'rgba(255,243,196,0)');
+      ctx.fillStyle = sunG;
+      ctx.fillRect(sunX - 90, sunY - 90, 180, 180);
+    }
 
     // ---------- parallax layers ----------
     const s = this.biome.layerScroll;
@@ -105,7 +153,7 @@ export class ParallaxRenderer {
       if (r > 0.75) continue;
       const sx = wx - off;
       const th = 60 + r * 70;
-      const sway = Math.sin(this.windTime * 1.2 + wx * 0.01) * 2;
+      const sway = Math.sin(this.windTime * 1.2 + wx * 0.01) * 2 * (0.6 + this.windStrength * 2.2);
       // trunk
       ctx.fillStyle = '#4a3a2a';
       ctx.fillRect(sx - 3, baseY - th * 0.35, 6, th * 0.35);
@@ -201,7 +249,8 @@ export class ParallaxRenderer {
   }
 
   _grassTuft(ctx, x, y, height, color, widthScale) {
-    const sway = Math.sin(this.windTime * 2 + x * 0.05) * height * 0.18;
+    const amp = 0.5 + this.windStrength * 2.4;
+    const sway = Math.sin(this.windTime * 2 + x * 0.05) * height * 0.18 * amp;
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.6 * widthScale;
     ctx.lineCap = 'round';

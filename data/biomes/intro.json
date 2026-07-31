@@ -80,5 +80,9 @@
     "brightness": 460,
     "pluckDensity": 0.12,
     "windBase": 0.28
+  },
+  "environment": {
+    "dayNight": false,
+    "weather": false
   }
 }

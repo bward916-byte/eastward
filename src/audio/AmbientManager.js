@@ -13,6 +13,7 @@ export class AmbientManager {
     this.windBase = 0.1;
     this.windLive = 0;         // Phase 4: WindSystem writes this each frame
     this._stepAcc = 0;
+    this.rainGain = null;
   }
 
   start(audioDef) {
@@ -42,7 +43,25 @@ export class AmbientManager {
     this.engine.ramp(this.windGain.gain, this.windBase + this.windLive, 2.5);
   }
 
-  /** Phase 4 hook: live wind strength 0..1 from WindSystem (§I.2). */
+  /** Rain patter bed (§I.2 weather SFX), level 0..1. */
+  setRain(level) {
+    const e = this.engine;
+    if (!e.ready) return;
+    if (!this.rainGain) {
+      const src = e.ctx.createBufferSource();
+      src.buffer = e.makeNoiseBuffer();
+      src.loop = true;
+      const bp = e.ctx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = 0.5;
+      this.rainGain = e.ctx.createGain();
+      this.rainGain.gain.value = 0;
+      src.connect(bp); bp.connect(this.rainGain); this.rainGain.connect(e.ambientBus);
+      src.start();
+    }
+    e.ramp(this.rainGain.gain, level * 0.22, 1.2);
+  }
+
+  /** Live wind strength 0..1 from WindSystem (§I.2). */
   setWind(strength) {
     this.windLive = strength * 0.4;
     if (this.windGain) {

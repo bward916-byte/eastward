@@ -18,6 +18,7 @@ export class InputManager {
     this._keys = new Set();
     this._jumpEdge = false;
     this._attackEdge = false;
+    this._interactEdge = false;
     // When this returns true (e.g. a dialogue box is open), touch input is
     // ignored so a right-side tap dismisses the box instead of jumping.
     this.touchBlocked = () => false;
@@ -32,6 +33,7 @@ export class InputManager {
       if (e.repeat) return;
       if (UP.has(e.key) && !this._keys.has('up')) this._jumpEdge = true;
       if (['x', 'X', 'f', 'F'].includes(e.key)) this._attackEdge = true;
+      if (['e', 'E'].includes(e.key)) this._interactEdge = true;
       this._setKey(e.key, true);
       if ([...LEFT, ...RIGHT, ...UP, ...DOWN].includes(e.key)) e.preventDefault();
     });

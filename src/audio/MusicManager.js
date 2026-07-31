@@ -30,6 +30,8 @@ export class MusicManager {
     bus.on('combatEnded', () => this.setLayer('combat', 0, 3));
     bus.on('gameSaved', () => this.sting('checkpoint'));
     bus.on('interestCollected', () => this.sting('pickup'));
+    bus.on('enteredTown', () => { this.setLayer('town', 0.6, 2.5); this.setLayer('base', 0.2, 2.5); });
+    bus.on('leftTown', () => { this.setLayer('town', 0, 3); this.setLayer('base', 0.5, 3); });
   }
 
   playBiome(audioDef, id) {
@@ -123,6 +125,7 @@ class BiomeMusic {
     this._buildPad(def);
     this._buildTension(def);
     this._buildCombat(def);
+    this._buildTown(def);
     this._startPlucks(def);
   }
 
@@ -202,6 +205,26 @@ class BiomeMusic {
     o.connect(og); og.connect(lp); lp.connect(g);
     o.start(); lfo.start();
     this._nodes.push(o, lfo);
+  }
+
+  // Town/safe layer (§H.2): warmer, closer-voiced pad, silent until inside
+  _buildTown(def) {
+    const e = this.engine;
+    const g = this._layerGain('town', 0);
+    const lp = e.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = (def.brightness ?? 1200) * 1.4;
+    lp.connect(g);
+    const warm = [def.root, def.root + 4, def.root + 7, def.root + 12];
+    for (const m of warm) {
+      const o = e.ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = e.midiToFreq(m);
+      const og = e.ctx.createGain(); og.gain.value = 0.07;
+      o.connect(og); og.connect(lp);
+      o.start();
+      this._nodes.push(o);
+    }
   }
 
   // Sparse plucked melody from the biome's scale — lookahead scheduler

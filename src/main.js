@@ -18,6 +18,7 @@ import { DayNightCycle } from './world/DayNightCycle.js';
 import { WindSystem } from './world/WindSystem.js';
 import { WeatherSystem } from './world/WeatherSystem.js';
 import { EncounterManager } from './world/EncounterManager.js';
+import { Town } from './world/Town.js';
 import { ParallaxRenderer } from './render/ParallaxRenderer.js';
 import { HudRenderer } from './render/HudRenderer.js';
 import { Dialogue } from './systems/Dialogue.js';
@@ -110,6 +111,7 @@ async function boot() {
     wind.setBiome(biome.wind);
     weather.setBiome(biome.weather);
     const env = biome.environment ?? { dayNight: true, weather: true };
+    const town = biome.town ? new Town(biome.town, terrain, player, dialogue, dayNight) : null;
     const encounters = new EncounterManager(biome.encounters, terrain, player, dialogue);
     encounters.onClassChosen = (classId) => {
       player.applyClass(classId, classes[classId]);
@@ -118,7 +120,7 @@ async function boot() {
     projectiles.length = 0;
     camera.nearestFlaggedDistance = () => encounters.nearestFlaggedDistance(player.x);
     scene = {
-      id, biome, terrain, intro, checkpoints, env, encounters,
+      id, biome, terrain, intro, checkpoints, env, encounters, town,
       parallax: new ParallaxRenderer(biome, terrain),
     };
   }
@@ -145,6 +147,12 @@ async function boot() {
   }
 
   bus.on('gameSaved', () => hud.flashSaved());
+  bus.on('creatureSlain', () => { player.gold += 5; });   // pelts, abstracted (§10)
+  const contextBtn = document.getElementById('context-btn');
+  contextBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (!dialogue.active) input.pressInteract();
+  });
   attackBtn.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     if (!dialogue.active) input.pressAttack();
@@ -198,7 +206,9 @@ async function boot() {
       scene.intro?.update(dt);
       if (!scene.intro) {
         scene.encounters.update(dt, input);
-        if (input.attackPressed && player.classDef && !dialogue.active) {
+        scene.town?.update(dt, input.interactPressed && !dialogue.active);
+        // towns are non-combat zones (§8): weapons suppressed inside
+        if (input.attackPressed && player.classDef && !dialogue.active && !scene.town?.inTown) {
           player.tryAttack(scene.encounters.creatures, projectiles);
         }
         for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -214,7 +224,13 @@ async function boot() {
       player.xp = xpManager.xp;
       player.level = xpManager.level;
       hud.xpProgress = xpManager.progress;
-      journeyBtn.hidden = !scene.checkpoints.some(cp => cp.reached && Math.abs(player.x - cp.x) < 80);
+      journeyBtn.hidden = !(
+        scene.checkpoints.some(cp => cp.reached && Math.abs(player.x - cp.x) < 80)
+        || scene.town?.inTown   // the town IS a checkpoint (§A.1)
+      );
+      const nearSvc = !!scene.town?.nearService;
+      contextBtn.hidden = !nearSvc;
+      attackBtn.hidden = !player.classDef || scene.town?.inTown || nearSvc;
     },
     (alpha) => {
       const [sx, sy] = scene.intro?.shakeOffset() ?? [0, 0];
@@ -224,6 +240,7 @@ async function boot() {
       camera.applyTransform(ctx);
       ctx.translate(sx / camera.zoom, sy / camera.zoom);
       for (const cp of scene.checkpoints) cp.render(ctx, worldTime);
+      scene.town?.render(ctx, worldTime);
       scene.encounters.render(ctx, worldTime);
       for (const pr of projectiles) pr.render(ctx);
       levelFx.render(ctx, player.x, player.y);

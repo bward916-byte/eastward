@@ -6,7 +6,7 @@
 // arrays), never a hand-maintained mapping (§S.6). Zero dependencies.
 
 const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-const VERSION = 'E1';
+const VERSION = 'E2';  // E1 codes predate gold/identified — cleanly rejected
 
 function crc16(bytes) {
   let crc = 0xFFFF;
@@ -62,6 +62,8 @@ export function encodeSnapshot(snap, biome, manifest) {
   u8(b, snap.player.health ?? 100);
   u8(b, snap.player.mana ?? 0);
   u8(b, snap.player.artifacts ?? 0);
+  u8(b, snap.player.identified ?? 0);
+  u16(b, snap.player.gold ?? 0);
   u8(b, snap.player.classId ? manifest.classes.indexOf(snap.player.classId) : 255);
   u16(b, (snap.world?.timeOfDay ?? 0.32) * 65535);
   const sk = snap.player.skills ?? {};
@@ -121,6 +123,8 @@ export function decodeSnapshot(code, biome, manifest) {
     const facing = r8() ? 1 : -1;
     const stamina = r8(), endurance = r8(), health = r8(), mana = r8();
     const artifacts = r8();
+    const identified = r8();
+    const gold = r16();
     const clsIdx = r8();
     const classId = clsIdx === 255 ? null : manifest.classes[clsIdx] ?? null;
     const timeOfDay = r16() / 65535;
@@ -146,7 +150,7 @@ export function decodeSnapshot(code, biome, manifest) {
       checkpointId,
       biome: biomeId,
       savedAt: Date.now(),
-      player: { x, facing, stamina, endurance, health, mana, artifacts, classId, skills, maxHealth, xp, level },
+      player: { x, facing, stamina, endurance, health, mana, artifacts, identified, gold, classId, skills, maxHealth, xp, level },
       world: { timeOfDay, flags },
     };
   } catch {

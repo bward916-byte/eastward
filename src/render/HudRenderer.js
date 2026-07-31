@@ -11,6 +11,8 @@ export class HudRenderer {
     this.portrait = document.getElementById('hud-portrait');
     this.saveIcon = document.getElementById('save-indicator');
     this.artifactWrap = document.getElementById('artifact-counter');
+    this.goldWrap = document.getElementById('gold-counter');
+    this.goldCount = document.getElementById('gold-count');
     this.rowHealth = document.getElementById('row-health');
     this.barHealth = document.getElementById('bar-health');
     this.rowMana = document.getElementById('row-mana');
@@ -32,9 +34,14 @@ export class HudRenderer {
 
   update(player) {
     if (this.artifactWrap) {
-      const n = player.artifacts ?? 0;
+      const n = (player.artifacts ?? 0) + (player.identified ?? 0);
       this.artifactWrap.hidden = n === 0;
-      this.artifactCount.textContent = n;
+      this.artifactCount.textContent = player.identified > 0
+        ? `${player.artifacts} · ✓${player.identified}` : `${player.artifacts}`;
+    }
+    if (this.goldWrap) {
+      this.goldWrap.hidden = !(player.gold > 0);
+      this.goldCount.textContent = player.gold;
     }
     // Health visible whenever below full (Amendment 02 §D.2); mana for casters
     const showHealth = player.health < player.maxHealth - 0.5;

@@ -26,6 +26,7 @@ export class SaveManager {
     }
 
     bus.on('checkpointReached', ({ id }) => this.saveAtCheckpoint(id));
+    bus.on('forceSave', ({ id }) => { this.lastCheckpointId = null; this.saveAtCheckpoint(id); });
   }
 
   setBiome(id) { this.biomeId = id; }
@@ -46,6 +47,8 @@ export class SaveManager {
         stamina: this.player.stamina,
         endurance: this.player.endurance,
         artifacts: this.player.artifacts,
+        identified: this.player.identified,
+        gold: this.player.gold,
         classId: this.player.classId,
         health: this.player.health,
         mana: this.player.mana,
@@ -87,6 +90,8 @@ export class SaveManager {
     player.stamina = snap.player.stamina ?? 100;
     player.endurance = snap.player.endurance ?? 100;
     player.artifacts = snap.player.artifacts ?? 0;
+    player.identified = snap.player.identified ?? 0;
+    player.gold = snap.player.gold ?? 0;
     if (snap.player.health != null) player.health = snap.player.health;
     if (snap.player.mana != null) player.mana = snap.player.mana;
     if (snap.player.maxHealth != null) player.maxHealth = snap.player.maxHealth;

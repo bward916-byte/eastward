@@ -282,3 +282,34 @@
 }
 #journey-error { font-size: 11px; color: #e08a6a; margin-top: 6px; }
 #journey-error[hidden] { display: none; }
+
+#gold-counter {
+  position: absolute;
+  top: 48px;
+  left: 16px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: #e8cd6a;
+  background: rgba(12, 16, 10, 0.55);
+  border: 1px solid rgba(232, 205, 106, 0.35);
+  padding: 4px 11px;
+  border-radius: 12px;
+  user-select: none;
+}
+#gold-counter[hidden] { display: none; }
+#context-btn {
+  position: absolute;
+  right: 18px;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  width: 58px; height: 58px;
+  border-radius: 50%;
+  border: 1px solid rgba(216, 201, 138, 0.5);
+  background: rgba(14, 17, 12, 0.6);
+  color: #ece5cc;
+  font-size: 22px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+#context-btn[hidden] { display: none; }
+#context-btn:active { background: rgba(216, 201, 138, 0.3); }

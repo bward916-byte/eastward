@@ -214,5 +214,29 @@
         "Strong hands. Swing wide, stand fast \u2014 but the sky will never fear you."
       ]
     }
-  ]
+  ],
+  "town": {
+    "id": "hearthstead",
+    "name": "HEARTHSTEAD",
+    "west": 7060,
+    "east": 8400,
+    "services": [
+      {
+        "type": "inn",
+        "x": 7520
+      },
+      {
+        "type": "trainer",
+        "x": 7740
+      },
+      {
+        "type": "sage",
+        "x": 7960
+      },
+      {
+        "type": "merchant",
+        "x": 8180
+      }
+    ]
+  }
 }

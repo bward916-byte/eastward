@@ -69,6 +69,8 @@ export class Player {
     // higher = faster climb, less drain, (later) higher max angle & grip.
     this.climbSkill = 1.0;
     this.artifacts = 0;        // unidentified '???' artifacts held (§8)
+    this.identified = 0;       // sage-identified relics, sellable (§8/§10)
+    this.gold = 0;
 
     // class & combat (Phase 6, Amendment 06 §O)
     this.classId = null;

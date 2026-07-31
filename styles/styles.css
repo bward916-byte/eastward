@@ -4,7 +4,8 @@
 
 html, body {
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  height: 100dvh; /* mobile: visible viewport, not the space behind browser chrome */
   overflow: hidden;
   background: #10141c;
   font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
@@ -14,6 +15,7 @@ html, body {
   position: relative;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
 }
 
 #game-canvas {

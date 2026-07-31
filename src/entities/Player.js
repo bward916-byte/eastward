@@ -10,7 +10,6 @@ import { SCRAMBLE_MIN, CLIMB_MIN } from '../world/TerrainSpline.js';
 // --- locomotion tunables --------------------------------------------------
 const BASE_SPEED = 150;        // px/s at Walk (1x)
 const RUN_MULT = 2.0;
-const SPRINT_MULT = 3.2;
 const RUN_THRESHOLD = 0.3;     // hold seconds before Walk promotes to Run
 const ACCEL = 900;
 const DECEL = 1100;
@@ -35,10 +34,9 @@ const FALL_STAM_COST = 15;
 const STAMINA_MAX = 100;
 const ENDURANCE_MAX = 100;
 const RUN_DRAIN = 6;
-const SPRINT_DRAIN = 26;
 const JUMP_COST = 5;
 const STAMINA_REGEN = 18;
-const ENDURANCE_DRAIN = 0.9;
+const ENDURANCE_DRAIN = 0.25;  // slow conditioning wear during sustained Run
 const ENDURANCE_REGEN = 0.35;
 const FATIGUE_TIME = 2.5;
 const FATIGUE_SPEED = 0.6;
@@ -112,8 +110,6 @@ export class Player {
       this.state = 'IDLE';
     } else if (fatigued) {
       this.state = 'WALK';
-    } else if (input.sprintMod && this.stamina > 0.01) {
-      this.state = 'SPRINT';
     } else if (input.holdDuration > RUN_THRESHOLD && this.stamina > 0.01) {
       this.state = 'RUN';
     } else {
@@ -121,7 +117,7 @@ export class Player {
     }
 
     // ---- entering a climb face from below: hold Up + direction to start ----
-    if ((this.state === 'WALK' || this.state === 'RUN' || this.state === 'SPRINT' || this.state === 'IDLE')
+    if ((this.state === 'WALK' || this.state === 'RUN' || this.state === 'IDLE')
         && tierAhead === 'climb' && this.grounded) {
       const faceAscends = terrain.slopeAt(this.x + this.facing * 14) * this.facing > 0;
       if (faceAscends && input.jumpHeld && wantDir === this.facing && this.stamina > 1) {
@@ -150,7 +146,6 @@ export class Player {
       switch (this.state) {
         case 'WALK': mult = fatigued ? FATIGUE_SPEED : 1; break;
         case 'RUN': mult = RUN_MULT; break;
-        case 'SPRINT': mult = SPRINT_MULT; break;
         case 'EXHAUSTED': mult = 0.45; break;
         case 'JUMP': mult = Math.abs(this.vx) / BASE_SPEED; break;
       }
@@ -220,11 +215,9 @@ export class Player {
 
     // ---- stamina / endurance (§3.1) ----
     const hadStamina = this.stamina > 0.01;
-    if (this.state === 'SPRINT') {
-      this.stamina -= SPRINT_DRAIN * dt;
-      this.endurance = clamp(this.endurance - ENDURANCE_DRAIN * dt, 0, ENDURANCE_MAX);
-    } else if (this.state === 'RUN') {
+    if (this.state === 'RUN') {
       this.stamina -= RUN_DRAIN * dt;
+      this.endurance = clamp(this.endurance - ENDURANCE_DRAIN * dt, 0, ENDURANCE_MAX);
     } else if (this.state === 'WALK' || this.state === 'IDLE') {
       this.stamina += STAMINA_REGEN * dt;
       if (this.state === 'IDLE') {
@@ -246,7 +239,7 @@ export class Player {
     const t = this.animTime;
     const climbing = this.state === 'CLIMB' || this.state === 'SLIDE';
     const moving = Math.abs(this.vx) > 6;
-    const speedFrac = clamp(Math.abs(this.vx) / (BASE_SPEED * SPRINT_MULT), 0, 1);
+    const speedFrac = clamp(Math.abs(this.vx) / (BASE_SPEED * RUN_MULT), 0, 1);
 
     const bob = climbing ? 0 : moving ? Math.sin(t * 10) * (1.5 + speedFrac * 2.5) : Math.sin(t * 2) * 0.8;
     let lean;

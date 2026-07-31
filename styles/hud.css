@@ -8,7 +8,7 @@
   display: flex;
   align-items: flex-end;
   gap: 14px;
-  padding: 10px 16px 12px;
+  padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
   background: linear-gradient(to top, rgba(12, 16, 10, 0.82), rgba(12, 16, 10, 0));
   pointer-events: none;
   user-select: none;

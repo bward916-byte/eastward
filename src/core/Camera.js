@@ -30,7 +30,7 @@ export class Camera {
 
   update(dt, player) {
     // --- desired zoom (§3.4) ---
-    const fast = player.state === 'RUN' || player.state === 'SPRINT';
+    const fast = player.state === 'RUN';
     if (fast && Math.abs(player.vx) > 1) this._fastTimer += dt;
     else this._fastTimer = 0;
 

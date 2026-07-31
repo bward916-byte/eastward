@@ -4,7 +4,6 @@
 // Intents exposed each frame:
 //   moveDir      : -1 | 0 | 1
 //   holdDuration : seconds the current moveDir has been continuously held
-//   sprintMod    : true while Down-arrow held during movement (sprint modifier)
 //   jumpPressed  : true on the frame Up was first pressed (edge)
 //   jumpHeld     : true while Up remains held (variable jump height)
 //   crouch       : Down held while NOT moving (reserved for later phases)
@@ -21,7 +20,6 @@ export class InputManager {
 
     this.moveDir = 0;
     this.holdDuration = 0;
-    this.sprintMod = false;
     this.jumpPressed = false;
     this.jumpHeld = false;
     this.crouch = false;
@@ -70,7 +68,6 @@ export class InputManager {
         this._keys.delete('left'); this._keys.delete('right'); this._keys.delete('down');
         if (dx > 12) this._keys.add('right');
         else if (dx < -12) this._keys.add('left');
-        if (Math.abs(dx) > 110) this._keys.add('down'); // long drag = sprint modifier
       }
     }, { passive: true });
     window.addEventListener('touchend', (e) => {
@@ -95,8 +92,7 @@ export class InputManager {
     else this.holdDuration = 0;
     this.moveDir = dir;
 
-    this.sprintMod = this._keys.has('down') && dir !== 0;
-    this.crouch = this._keys.has('down') && dir === 0;
+    this.crouch = this._keys.has('down');
     this.jumpHeld = this._keys.has('up');
     this.jumpPressed = this._jumpEdge;
     this._jumpEdge = false;

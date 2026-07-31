@@ -17,6 +17,9 @@ import { Checkpoint } from './world/Checkpoint.js';
 import { ParallaxRenderer } from './render/ParallaxRenderer.js';
 import { HudRenderer } from './render/HudRenderer.js';
 import { Dialogue } from './systems/Dialogue.js';
+import { AudioEngine } from './audio/AudioEngine.js';
+import { MusicManager } from './audio/MusicManager.js';
+import { AmbientManager } from './audio/AmbientManager.js';
 
 async function boot() {
   const canvas = document.getElementById('game-canvas');
@@ -36,6 +39,21 @@ async function boot() {
   const hud = new HudRenderer();
   const dialogue = new Dialogue();
   const saveManager = new SaveManager(player);
+
+  const audio = new AudioEngine();
+  const music = new MusicManager(audio);
+  const ambient = new AmbientManager(audio);
+  const unlockAudio = () => {
+    audio.init();
+    if (scene) { music.playBiome(scene.biome.audio, scene.id); ambient.start(scene.biome.audio); }
+    window.removeEventListener('pointerdown', unlockAudio);
+    window.removeEventListener('keydown', unlockAudio);
+  };
+  window.addEventListener('pointerdown', unlockAudio);
+  window.addEventListener('keydown', unlockAudio);
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'm' || e.key === 'M') audio.toggleMute();
+  });
 
   let scene = null;
 
@@ -64,6 +82,8 @@ async function boot() {
     camera.y = player.y - camera.viewH * 0.12;
 
     saveManager.setBiome(id);
+    music.playBiome(biome.audio, id);
+    ambient.setBiome(biome.audio);
     scene = {
       id, biome, terrain, intro, checkpoints,
       parallax: new ParallaxRenderer(biome, terrain),
@@ -97,6 +117,7 @@ async function boot() {
       for (const cp of scene.checkpoints) cp.update(dt, player);
       camera.update(dt, player);
       scene.parallax.update(dt);
+      ambient.update(dt, player);
     },
     (alpha) => {
       const [sx, sy] = scene.intro?.shakeOffset() ?? [0, 0];

@@ -76,6 +76,7 @@ export class EncounterManager {
           bus.emit('challengePassed', { id: e.id });
         }
         if (!e.resolved && dist > 0) maxX = Math.min(maxX, e.x - 42);
+        e._showAttackHint = e.spawned && !e.resolved && Math.abs(dist) < 320;
         continue;
       }
 
@@ -170,7 +171,18 @@ export class EncounterManager {
     for (const e of this.encounters) {
       if (e.type === 'adventure') this._renderNPC(ctx, e, time);
       else if (e.type === 'rite') this._renderRite(ctx, e, time);
-      else if (e.type === 'creature') { /* creatures render below */ }
+      else if (e.type === 'creature' && e._showAttackHint) {
+        const hx = e.x, hy = this.terrain.groundYAt(e.x) - 92;
+        ctx.font = '13px "Trebuchet MS", sans-serif';
+        const label = 'X / ⚔ to attack';
+        const w = ctx.measureText(label).width + 18;
+        ctx.fillStyle = 'rgba(12, 16, 10, 0.62)';
+        ctx.beginPath(); ctx.roundRect(hx - w / 2, hy - 13, w, 22, 10); ctx.fill();
+        ctx.fillStyle = 'rgba(240, 236, 214, 0.92)';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, hx, hy + 3);
+        ctx.textAlign = 'left';
+      }
       else if (e.type === 'interest') this._renderInterest(ctx, e, time);
       else if (e.type === 'challenge') this._renderTree(ctx, e, time);
       if (e.sparkle > 0) this._renderSparkle(ctx, e, time);

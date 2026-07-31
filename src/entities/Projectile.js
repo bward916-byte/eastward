@@ -4,7 +4,7 @@
 // stay understated so super-weapon effects (§7) read as special by contrast.
 
 export class Projectile {
-  constructor(kind, x, y, target, def, fallbackDir) {
+  constructor(kind, x, y, target, def, fallbackDir, willMiss = false) {
     this.kind = kind;              // 'knife' | 'bolt'
     this.x = x; this.y = y;
     this.target = target;          // may be null → flies straight
@@ -13,8 +13,10 @@ export class Projectile {
     this.alive = true;
     this.ttl = 1.4;
     this.spin = 0;
+    this.willMiss = willMiss;
     if (target) {
-      const a = Math.atan2(target.y - 14 - y, target.x - x);
+      let a = Math.atan2(target.y - 14 - y, target.x - x);
+      if (willMiss) a += (Math.random() < 0.5 ? -1 : 1) * (0.22 + Math.random() * 0.15);
       this.vx = Math.cos(a) * this.speed;
       this.vy = Math.sin(a) * this.speed;
     } else {
@@ -28,8 +30,8 @@ export class Projectile {
     this.ttl -= dt;
     if (this.ttl <= 0) { this.alive = false; return; }
 
-    // light homing toward a living target
-    if (this.target && !this.target.dead) {
+    // light homing toward a living target (a missing shot doesn't correct)
+    if (this.target && !this.target.dead && !this.willMiss) {
       const a = Math.atan2(this.target.y - 14 - this.y, this.target.x - this.x);
       const cur = Math.atan2(this.vy, this.vx);
       let d = a - cur;
@@ -44,6 +46,7 @@ export class Projectile {
     this.y += this.vy * dt;
     this.spin += dt * 18;
 
+    if (this.willMiss) return;   // grazes past — no contact check
     for (const c of creatures) {
       if (c.dead) continue;
       if (Math.hypot(c.x - this.x, c.y - 14 - this.y) < 18) {

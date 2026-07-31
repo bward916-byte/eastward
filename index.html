@@ -40,6 +40,10 @@
           <span class="bar-label">ENDURANCE</span>
           <div class="bar"><div class="bar-fill endurance" id="bar-endurance"></div></div>
         </div>
+        <div class="bar-row">
+          <span class="bar-label">EXPERIENCE</span>
+          <div class="bar xp"><div class="bar-fill xp" id="bar-xp"></div></div>
+        </div>
       </div>
       <div id="hud-state" title="Locomotion state">IDLE</div>
     </div>
@@ -47,6 +51,24 @@
     <div id="save-indicator" aria-live="polite">✦ Journey saved</div>
     <div id="artifact-counter" hidden>◈ <span id="artifact-count">0</span></div>
     <button id="attack-btn" hidden aria-label="Attack">⚔</button>
+    <div id="levelup-label" aria-live="polite"></div>
+    <button id="journey-btn" hidden aria-label="Record your journey">✎</button>
+    <div id="journey-panel" hidden>
+      <h3>Record your journey</h3>
+      <p class="jp-hint">Keep this code to restore your journey anywhere.</p>
+      <textarea id="journey-code" readonly rows="3"></textarea>
+      <div class="jp-row">
+        <button id="journey-copy">Copy code</button>
+      </div>
+      <hr>
+      <p class="jp-hint">Or enter a code to load that journey. This replaces your current progress.</p>
+      <input id="journey-input" placeholder="E1-XXXXX-XXXXX-..." autocomplete="off" spellcheck="false">
+      <div class="jp-row">
+        <button id="journey-load">Load code</button>
+        <button id="journey-close">Close</button>
+      </div>
+      <p id="journey-error" hidden>That code doesn't look right — please check it and try again.</p>
+    </div>
 
     <div id="dialogue-box" hidden>
       <div id="dialogue-speaker"></div>

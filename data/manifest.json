@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "biomes": ["intro", "meadow"],
+  "classes": ["thief", "wizard", "fighter"]
+}

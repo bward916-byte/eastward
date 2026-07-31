@@ -52,6 +52,24 @@ export class MusicManager {
   sting(kind) {
     const e = this.engine;
     if (!e.ready) return;
+    if (kind === 'levelup' || kind === 'levelup-major') {
+      const big = kind === 'levelup-major';
+      const root = (this.current?.def.root ?? 57) + 12;
+      const seq = big ? [[0, 0], [4, 0.12], [7, 0.24], [12, 0.4]] : [[0, 0], [7, 0.14], [12, 0.3]];
+      for (const [off, dt] of seq) {
+        const t = e.now + dt;
+        const o = e.ctx.createOscillator();
+        o.type = 'triangle';
+        o.frequency.value = e.midiToFreq(root + off);
+        const g = e.ctx.createGain();
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(big ? 0.16 : 0.11, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t + (big ? 1.6 : 1.0));
+        o.connect(g); g.connect(e.musicBus);
+        o.start(t); o.stop(t + 2);
+      }
+      return;
+    }
     if (kind === 'pickup') {
       const root = (this.current?.def.root ?? 57) + 24;
       const t = e.now;

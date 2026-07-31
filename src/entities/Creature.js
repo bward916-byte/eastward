@@ -4,6 +4,7 @@
 // of data, not special cases — a future flying enemy just omits 'melee'.
 
 import { clamp } from '../core/utils.js';
+import { bus } from '../core/EventBus.js';
 
 const KINDS = {
   wolf: {
@@ -40,7 +41,7 @@ export class Creature {
     this.hp -= n;
     this.flash = 0.18;
     this.x += Math.sign(this.x - fromX) * 7;
-    if (this.hp <= 0) { this.dead = true; this.state = 'dead'; }
+    if (this.hp <= 0) { this.dead = true; this.state = 'dead'; bus.emit('creatureSlain', { kind: this.kind }); }
     else if (this.state === 'patrol') { this.state = 'chase'; }
   }
 

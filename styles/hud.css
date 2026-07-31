@@ -61,6 +61,8 @@
 .bar-fill.stamina   { background: linear-gradient(to bottom, #ffd764, #e0a734); }
 .bar-fill.health    { background: linear-gradient(to bottom, #e07a64, #b84a3a); }
 .bar-fill.mana      { background: linear-gradient(to bottom, #7a9ae0, #4a6ab8); }
+.bar-fill.xp        { background: linear-gradient(to bottom, #b48ae0, #8452b8); }
+.bar.xp { height: 6px; }
 .bar-fill.endurance { background: linear-gradient(to bottom, #6fd0a8, #3f9a76); }
 
 /* Darkened region past the current endurance ceiling on the stamina bar */
@@ -210,3 +212,73 @@
 @media (hover: hover) and (pointer: fine) {
   #attack-btn { opacity: 0.55; } /* desktop has X/F; keep it subtle */
 }
+
+/* Level-up notification label (Amendment 07 §U.4) — non-blocking */
+#levelup-label {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  bottom: calc(140px + env(safe-area-inset-bottom));
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: #f0e6c0;
+  text-shadow: 0 1px 6px rgba(120, 80, 20, 0.8);
+  opacity: 0;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: none;
+}
+#levelup-label.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+#levelup-label.major { font-size: 19px; color: #ffe9a8; }
+
+/* Journey (save code) UI — Amendment 07 §S */
+#journey-btn {
+  position: absolute;
+  top: 12px;
+  right: 130px;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(216, 201, 138, 0.45);
+  background: rgba(12, 16, 10, 0.55);
+  color: #d8c98a;
+  font-size: 16px;
+  cursor: pointer;
+}
+#journey-btn[hidden] { display: none; }
+#journey-panel {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(440px, 90vw);
+  background: rgba(14, 17, 12, 0.96);
+  border: 1px solid rgba(216, 201, 138, 0.5);
+  border-radius: 10px;
+  padding: 16px 18px;
+  color: #ece5cc;
+  z-index: 50;
+}
+#journey-panel[hidden] { display: none; }
+#journey-panel h3 { font-size: 14px; letter-spacing: 1.5px; color: #d8c98a; margin-bottom: 6px; }
+#journey-panel .jp-hint { font-size: 11px; opacity: 0.7; margin: 6px 0; }
+#journey-panel textarea, #journey-panel input {
+  width: 100%;
+  font: 12px monospace;
+  color: #ece5cc;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(216, 201, 138, 0.3);
+  border-radius: 6px;
+  padding: 7px;
+  resize: none;
+}
+#journey-panel hr { border: none; border-top: 1px solid rgba(216,201,138,0.2); margin: 12px 0; }
+.jp-row { display: flex; gap: 8px; margin-top: 8px; }
+.jp-row button {
+  font: inherit; font-size: 12px;
+  color: #ece5cc;
+  background: rgba(216, 201, 138, 0.14);
+  border: 1px solid rgba(216, 201, 138, 0.5);
+  border-radius: 6px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+#journey-error { font-size: 11px; color: #e08a6a; margin-top: 6px; }
+#journey-error[hidden] { display: none; }

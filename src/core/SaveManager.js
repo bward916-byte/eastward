@@ -8,6 +8,7 @@
 // companions, mount, worldFlags) extend it without breaking old saves.
 
 import { bus } from './EventBus.js';
+import { encodeSnapshot, decodeSnapshot, peekBiomeIndex } from './SaveCodeCodec.js';
 
 const KEY = 'eastward.save';
 const SCHEMA_VERSION = 1;
@@ -48,6 +49,10 @@ export class SaveManager {
         classId: this.player.classId,
         health: this.player.health,
         mana: this.player.mana,
+        maxHealth: this.player.maxHealth,
+        skills: { ...this.player.skills, climbSkill: this.player.climbSkill },
+        xp: this.player.xp,
+        level: this.player.level,
       },
       // Reserved for later phases (schema stability — Amendment 01 §A.4):
       // health/injuries/sickness (§12), inventory, equipment, skills, class,
@@ -84,6 +89,38 @@ export class SaveManager {
     player.artifacts = snap.player.artifacts ?? 0;
     if (snap.player.health != null) player.health = snap.player.health;
     if (snap.player.mana != null) player.mana = snap.player.mana;
+    if (snap.player.maxHealth != null) player.maxHealth = snap.player.maxHealth;
+    if (snap.player.skills) {
+      player.skills.accuracy = snap.player.skills.accuracy ?? 1;
+      player.skills.fightSpeed = snap.player.skills.fightSpeed ?? 1;
+      player.skills.autoDodge = snap.player.skills.autoDodge ?? 0;
+      if (snap.player.skills.climbSkill != null) player.climbSkill = snap.player.skills.climbSkill;
+    }
+    player.xp = snap.player.xp ?? 0;
+    player.level = snap.player.level ?? 0;
+  }
+
+  /** Amendment 07 §S: export the CURRENT local checkpoint save as a code. */
+  exportCode(biome, manifest) {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return null;
+    try { return encodeSnapshot(JSON.parse(raw), biome, manifest); }
+    catch { return null; }
+  }
+
+  peekCodeBiome(code, manifest) {
+    const idx = peekBiomeIndex(code);
+    return idx == null ? null : manifest.biomes[idx] ?? null;
+  }
+
+  /** Decode + overwrite the rolling local slot (§S.3). Returns snapshot or null. */
+  importFromCode(code, biome, manifest) {
+    const snap = decodeSnapshot(code, biome, manifest);
+    if (!snap) return null;
+    localStorage.setItem(KEY, JSON.stringify(snap));
+    this.lastCheckpointId = snap.checkpointId;
+    this.biomeId = snap.biome;
+    return snap;
   }
 
   _migrate(snap) {

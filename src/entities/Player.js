@@ -8,6 +8,7 @@ import { clamp } from '../core/utils.js';
 import { bus } from '../core/EventBus.js';
 import { SCRAMBLE_MIN, CLIMB_MIN } from '../world/TerrainSpline.js';
 import { nearestTarget } from './TargetAcquisition.js';
+import { CombatResolver } from '../systems/CombatResolver.js';
 import { Projectile } from './Projectile.js';
 
 // --- locomotion tunables --------------------------------------------------
@@ -76,6 +77,10 @@ export class Player {
     this.maxHealth = 100;
     this.mana = 0;
     this.maxMana = 0;
+    this.skills = { accuracy: 1, fightSpeed: 1, autoDodge: 0 };  // §T
+    this.xp = 0;
+    this.level = 0;
+    this.dodgeT = 0;
     this.attackCooldown = 0;
     this.swingT = 0;           // fighter swipe anim
     this.iframes = 0;
@@ -99,6 +104,13 @@ export class Player {
 
   takeDamage(n, fromX) {
     if (this.iframes > 0 || this.health <= 0) return;
+    // passive Auto-Dodge (§T.4): trained chance to evade a landing attack
+    if (CombatResolver.dodgeRoll(this.skills.autoDodge)) {
+      this.dodgeT = 0.3;
+      this.iframes = 0.55;
+      this.vx += Math.sign(this.x - fromX) * 210;   // quick sidestep
+      return;
+    }
     this.health -= n;
     this.iframes = 0.9;
     this.hurtFlash = 0.25;
@@ -114,13 +126,14 @@ export class Player {
     const def = this.classDef;
     if (!def || this.attackCooldown > 0 || this.state === 'CLIMB' || this.state === 'SLIDE') return;
     if (def.attack === 'swipe') {
-      this.attackCooldown = def.cooldown;
+      this.attackCooldown = CombatResolver.cooldownFor(def.cooldown, this.skills.fightSpeed);
       this.swingT = 0.25;
       for (const c of creatures) {
         if (c.dead || !c.targetableBy.includes('melee')) continue;
         const dx = c.x - this.x;
         if (Math.sign(dx) === this.facing && Math.abs(dx) < def.range && Math.abs(c.y - this.y) < 55) {
-          c.takeDamage(def.damage, this.x);   // wide cleave: hits all in arc (§6)
+          // §T.2: auto-aim directs, Accuracy decides — per-target roll on a cleave
+          if (CombatResolver.hitRoll(this.skills.accuracy)) c.takeDamage(def.damage, this.x);
         }
       }
       return;
@@ -129,12 +142,13 @@ export class Player {
       if (this.mana < def.manaCost) return;
       this.mana -= def.manaCost;
     }
-    this.attackCooldown = def.cooldown;
+    this.attackCooldown = CombatResolver.cooldownFor(def.cooldown, this.skills.fightSpeed);
     const target = nearestTarget(this.x, this.y - 20, creatures, def.range, 'ground')
       ?? nearestTarget(this.x, this.y - 20, creatures, def.range, 'air');
+    const willMiss = target && !CombatResolver.hitRoll(this.skills.accuracy);
     projectiles.push(new Projectile(
       def.attack === 'bolt' ? 'bolt' : 'knife',
-      this.x + this.facing * 10, this.y - 26, target, def, this.facing
+      this.x + this.facing * 10, this.y - 26, target, def, this.facing, willMiss
     ));
   }
 
@@ -301,6 +315,7 @@ export class Player {
     // combat timers & slow recovery
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
     if (this.swingT > 0) this.swingT -= dt;
+    if (this.dodgeT > 0) this.dodgeT -= dt;
     if (this.iframes > 0) this.iframes -= dt;
     if (this.hurtFlash > 0) this.hurtFlash -= dt;
     if (this.health > 0 && this.health < this.maxHealth) {

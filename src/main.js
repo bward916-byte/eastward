@@ -24,6 +24,9 @@ import { Dialogue } from './systems/Dialogue.js';
 import { AudioEngine } from './audio/AudioEngine.js';
 import { MusicManager } from './audio/MusicManager.js';
 import { AmbientManager } from './audio/AmbientManager.js';
+import { ExperienceManager } from './systems/ExperienceManager.js';
+import { UpgradeResolver } from './systems/UpgradeResolver.js';
+import { LevelUpNotification } from './render/LevelUpNotification.js';
 
 async function boot() {
   const canvas = document.getElementById('game-canvas');
@@ -39,6 +42,7 @@ async function boot() {
   resize();
 
   const classes = await fetch('data/classes.json').then(r => r.json());
+  const manifest = await fetch('data/manifest.json').then(r => r.json());
   const player = new Player(60, 520);
   const projectiles = [];
   const attackBtn = document.getElementById('attack-btn');
@@ -66,6 +70,9 @@ async function boot() {
   const dayNight = new DayNightCycle();
   const wind = new WindSystem();
   const weather = new WeatherSystem();
+  const xpManager = new ExperienceManager();
+  new UpgradeResolver(player);
+  const levelFx = new LevelUpNotification(music);
   saveManager.getWorldState = () => ({
     timeOfDay: dayNight.phase,
     flags: scene?.encounters?.getFlags() ?? [],
@@ -151,14 +158,8 @@ async function boot() {
     setTimeout(async () => {
       const snap = saveManager.load();
       if (snap) {
-        await loadScene(snap.biome ?? 'meadow', snap.player.x);
-        saveManager.applyTo(player, snap);
+        await restoreFromSnapshot(snap);
         player.health = Math.max(50, snap.player.health ?? 100);
-        if (snap.player.classId) player.applyClass(snap.player.classId, classes[snap.player.classId]);
-        if (snap.world?.timeOfDay != null) dayNight.phase = snap.world.timeOfDay;
-        scene.encounters.applyFlags(snap.world?.flags);
-        for (const cp of scene.checkpoints) { if (cp.x <= player.x + 1) cp.reached = true; cp.glow = 0; }
-        saveManager.lastCheckpointId = snap.checkpointId;
       } else {
         player.health = player.maxHealth;
       }
@@ -209,6 +210,11 @@ async function boot() {
       camera.update(dt, player);
       scene.parallax.update(dt);
       ambient.update(dt, player);
+      levelFx.update(dt);
+      player.xp = xpManager.xp;
+      player.level = xpManager.level;
+      hud.xpProgress = xpManager.progress;
+      journeyBtn.hidden = !scene.checkpoints.some(cp => cp.reached && Math.abs(player.x - cp.x) < 80);
     },
     (alpha) => {
       const [sx, sy] = scene.intro?.shakeOffset() ?? [0, 0];
@@ -220,6 +226,7 @@ async function boot() {
       for (const cp of scene.checkpoints) cp.render(ctx, worldTime);
       scene.encounters.render(ctx, worldTime);
       for (const pr of projectiles) pr.render(ctx);
+      levelFx.render(ctx, player.x, player.y);
       scene.intro?.renderWorld(ctx);
       player.render(ctx, alpha);
       scene.parallax.renderForeground(ctx, camera);
@@ -231,6 +238,39 @@ async function boot() {
       hud.update(player);
     }
   );
+
+  // --- Portable save codes (Amendment 07 §S) ---
+  const journeyBtn = document.getElementById('journey-btn');
+  const journeyPanel = document.getElementById('journey-panel');
+  const journeyCode = document.getElementById('journey-code');
+  const journeyInput = document.getElementById('journey-input');
+  const journeyError = document.getElementById('journey-error');
+  journeyBtn.addEventListener('pointerdown', () => {
+    journeyError.hidden = true;
+    journeyInput.value = '';
+    journeyCode.value = saveManager.exportCode(scene.biome, manifest) ?? '(no saved journey yet)';
+    journeyPanel.hidden = false;
+  });
+  document.getElementById('journey-close').addEventListener('pointerdown', () => {
+    journeyPanel.hidden = true;
+  });
+  document.getElementById('journey-copy').addEventListener('pointerdown', async () => {
+    try { await navigator.clipboard.writeText(journeyCode.value); } catch {
+      journeyCode.select(); document.execCommand?.('copy');
+    }
+  });
+  document.getElementById('journey-load').addEventListener('pointerdown', async () => {
+    journeyError.hidden = true;
+    const code = journeyInput.value.trim();
+    if (!code) return;
+    const biomeId = saveManager.peekCodeBiome(code, manifest);
+    if (!biomeId) { journeyError.hidden = false; return; }
+    const biomeData = await fetch(`data/biomes/${biomeId}.json`).then(r => r.json());
+    const snapIn = saveManager.importFromCode(code, biomeData, manifest);
+    if (!snapIn) { journeyError.hidden = false; return; }
+    journeyPanel.hidden = true;
+    await restoreFromSnapshot(snapIn);
+  });
 
   new OrientationGate((isLandscape) => {
     if (isLandscape) { resize(); loop.start(); }

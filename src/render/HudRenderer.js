@@ -15,6 +15,8 @@ export class HudRenderer {
     this.barHealth = document.getElementById('bar-health');
     this.rowMana = document.getElementById('row-mana');
     this.barMana = document.getElementById('bar-mana');
+    this.barXp = document.getElementById('bar-xp');
+    this.xpProgress = 0;
     this.artifactCount = document.getElementById('artifact-count');
     this._saveTimer = null;
   }
@@ -41,6 +43,8 @@ export class HudRenderer {
     const showMana = player.maxMana > 0;
     this.rowMana.hidden = !showMana;
     if (showMana) this.barMana.style.width = (player.mana / player.maxMana * 100) + '%';
+
+    if (this.barXp) this.barXp.style.width = (this.xpProgress * 100) + '%';
 
     const stamPct = player.stamina;                       // out of 100
     const endPct = player.endurance;

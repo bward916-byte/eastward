@@ -41,7 +41,7 @@ const STOPS = [
     script: (t) => (t % 3 < 1.8 ? { ...RUN } : IDLE),
   },
   {
-    caption: 'Trained combat — auto-aimed, with Accuracy, Fight Speed, and Auto-Dodge earned over time.',
+    caption: 'Combat is fully automatic — your position is the weapon. Close in, or run when outmatched.',
     biome: 'meadow', x: 8480, duration: 16,
     setup: (d) => {
       d.player.applyClass('fighter', d.classes.fighter);
@@ -49,14 +49,10 @@ const STOPS = [
       d.player.ageDays = 6;
     },
     tick: (d) => { d.player.health = d.player.maxHealth; },
-    script: (t, player) => {
-      const nearWolf = player.x > 8560;
-      return {
-        ...RUN,
-        moveDir: nearWolf ? (t % 2 < 1.4 ? 1 : 0) : 1,
-        attackPressed: nearWolf && (t % 0.55) < 0.03,
-      };
-    },
+    script: (t, player) => ({
+      ...RUN,
+      moveDir: player.x > 8560 ? (t % 2 < 1.4 ? 1 : 0) : 1,
+    }),
   },
   {
     caption: 'Villages — rest, train, identify relics, trade. Every town saves the journey.',
@@ -84,10 +80,7 @@ const STOPS = [
       d.player.mana = 50; d.player.skills.accuracy = 2;
     },
     tick: (d) => { d.player.health = d.player.maxHealth; if (d.player.mana < 20) d.player.mana = 50; },
-    script: (t, player) => ({
-      ...RUN,
-      attackPressed: player.x > 1500 && (t % 0.8) < 0.03,
-    }),
+    script: () => RUN,
   },
   {
     caption: 'Somewhere east, a family waits.   — EASTWARD',

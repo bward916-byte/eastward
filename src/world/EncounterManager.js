@@ -236,7 +236,7 @@ export class EncounterManager {
       else if (e.type === 'creature' && e._showAttackHint) {
         const hx = e.x, hy = this.terrain.groundYAt(e.x) - 92;
         ctx.font = '13px "Trebuchet MS", sans-serif';
-        const label = 'X / ⚔ to attack';
+        const label = 'Steel acts on its own — run when outmatched';
         const w = ctx.measureText(label).width + 18;
         ctx.fillStyle = 'rgba(12, 16, 10, 0.62)';
         ctx.beginPath(); ctx.roundRect(hx - w / 2, hy - 13, w, 22, 10); ctx.fill();

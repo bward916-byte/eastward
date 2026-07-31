@@ -69,7 +69,6 @@ async function boot() {
   const manifest = await fetch('data/manifest.json').then(r => r.json());
   const player = new Player(60, 520);
   const projectiles = [];
-  const attackBtn = document.getElementById('attack-btn');
   const input = new InputManager();
   const hud = new HudRenderer();
   const dialogue = new Dialogue();
@@ -175,7 +174,6 @@ async function boot() {
     encounters.onBranchChosen = (to) => transitionTo(to, 60);
     encounters.onClassChosen = (classId) => {
       player.applyClass(classId, classes[classId]);
-      setVisible(attackBtn, true);
     };
     projectiles.length = 0;
     camera.nearestFlaggedDistance = () => encounters.nearestFlaggedDistance(player.x);
@@ -194,7 +192,6 @@ async function boot() {
     saveManager.applyTo(player, snap);
     if (snap.player.classId) {
       player.applyClass(snap.player.classId, classes[snap.player.classId]);
-      setVisible(attackBtn, true);
     }
     if (snap.world?.timeOfDay != null) dayNight.phase = snap.world.timeOfDay;
     scene.encounters.applyFlags(snap.world?.flags);
@@ -247,10 +244,7 @@ async function boot() {
     dbg(`E pressed blocking=${dialogue.blocking}`);
     if (!dialogue.blocking) input.pressInteract();
   });
-  bindTap(attackBtn, () => {
-    dbg(`ATK pressed blocking=${dialogue.blocking}`);
-    if (!dialogue.blocking) input.pressAttack();
-  });
+
 
   // combat defeat → resume at most recent checkpoint (Amendment 01 §A.2)
   let respawning = false;
@@ -332,9 +326,9 @@ async function boot() {
         scene.encounters.update(dt, inp);
         if (inp.interactPressed) dbg(`interact tick near=${!!(scene.town?.nearService || scene.encounters.nearInteractable)} blk=${dialogue.blocking}`);
         scene.town?.update(dt, inp.interactPressed && !dialogue.blocking);
-        // towns are non-combat zones (§8): weapons suppressed inside
-        if (inp.attackPressed && player.classDef && !dialogue.blocking && !scene.town?.inTown) {
-          player.tryAttack(scene.encounters.creatures, projectiles);
+        // fully automatic combat — towns stay weapons-suppressed (§8)
+        if (player.classDef && !scene.town?.inTown) {
+          player.autoAttack(scene.encounters.creatures, projectiles);
         }
         for (let i = projectiles.length - 1; i >= 0; i--) {
           projectiles[i].update(dt, scene.encounters.creatures);
@@ -362,7 +356,6 @@ async function boot() {
       setVisible(journeyBtn, true);   // journey/records always reachable
       const nearAct = !!scene.town?.nearService || !!scene.encounters.nearInteractable;
       setVisible(contextBtn, nearAct);
-      setVisible(attackBtn, !!player.classDef && !scene.town?.inTown && !nearAct);
     },
     (alpha) => {
       const [sx, sy] = scene.intro?.shakeOffset() ?? [0, 0];

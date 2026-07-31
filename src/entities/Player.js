@@ -142,15 +142,28 @@ export class Player {
     }
   }
 
-  /** Auto-aim attack (Amendment 06 §O): trigger, not aim. */
-  tryAttack(creatures, projectiles) {
+  /** Fully automatic combat (§O taken to its end): weapons engage on their
+   *  own when a valid target is in range — the player's skill is movement.
+   *  Closing distance commits; running breaks off. */
+  autoAttack(creatures, projectiles) {
     const def = this.classDef;
-    if (!def || this.attackCooldown > 0 || this.state === 'CLIMB' || this.state === 'SLIDE') return;
+    if (!def || this.attackCooldown > 0 || this.state === 'CLIMB'
+      || this.state === 'SLIDE' || this.state === 'STAGGER') return;
     const armPen = this.hasInjury('arm');                    // §12: bad swing arm
     const acc = this.skills.accuracy - (armPen ? 0.25 : 0);
     const cdMult = armPen ? 1.3 : 1;
     const dmg = Math.round(def.damage * this._rig.damageMult);
     if (def.attack === 'swipe') {
+      // any living melee-valid target close enough, either side
+      let best = null, bd = def.range;
+      for (const c of creatures) {
+        if (c.dead || !c.targetableBy.includes('melee')) continue;
+        const ad = Math.abs(c.x - this.x);
+        if (ad < bd && Math.abs(c.y - this.y) < 55) { best = c; bd = ad; }
+      }
+      if (!best) return;
+      // standing still: square up to a threat behind you
+      if (Math.abs(this.vx) < 25) this.facing = Math.sign(best.x - this.x) || this.facing;
       this.attackCooldown = CombatResolver.cooldownFor(def.cooldown, this.skills.fightSpeed) * cdMult;
       this.swingT = 0.25;
       for (const c of creatures) {
@@ -163,14 +176,13 @@ export class Player {
       }
       return;
     }
-    if (def.attack === 'bolt') {
-      if (this.mana < def.manaCost) return;
-      this.mana -= def.manaCost;
-    }
-    this.attackCooldown = CombatResolver.cooldownFor(def.cooldown, this.skills.fightSpeed) * cdMult;
     const target = nearestTarget(this.x, this.y - 20, creatures, def.range, 'ground')
       ?? nearestTarget(this.x, this.y - 20, creatures, def.range, 'air');
-    const willMiss = target && !CombatResolver.hitRoll(acc);
+    if (!target) return;                       // nothing in range — hold fire
+    if (def.attack === 'bolt' && this.mana < def.manaCost) return;
+    this.attackCooldown = CombatResolver.cooldownFor(def.cooldown, this.skills.fightSpeed) * cdMult;
+    if (def.attack === 'bolt') this.mana -= def.manaCost;
+    const willMiss = !CombatResolver.hitRoll(acc);
     projectiles.push(new Projectile(
       def.attack === 'bolt' ? 'bolt' : 'knife',
       this.x + this.facing * 10, this.y - 26, target, { ...def, damage: dmg }, this.facing, willMiss

@@ -12,6 +12,7 @@ export class Dialogue {
     this.textEl = document.getElementById('dialogue-text');
     this._advance = null;
     this.active = false;
+    this._closedAt = 0;
 
     const tryAdvance = () => { if (this._advance) this._advance(); };
     this.box?.addEventListener('pointerdown', (e) => { e.stopPropagation(); tryAdvance(); });
@@ -105,5 +106,6 @@ export class Dialogue {
     if (this.box) this.box.hidden = true;
     this._advance = null;
     this.active = false;
+    this._closedAt = 0;
   }
 }

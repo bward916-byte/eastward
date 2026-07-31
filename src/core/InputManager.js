@@ -58,6 +58,8 @@ export class InputManager {
     let moveTouchId = null;
     let startX = 0;
     window.addEventListener('touchstart', (e) => {
+      // taps on buttons/panels/dialogue are UI, never movement or jump
+      if (e.target && e.target.tagName !== 'CANVAS') return;
       if (this.touchBlocked()) return;
       for (const t of e.changedTouches) {
         if (t.clientX > window.innerWidth / 2) {
@@ -70,6 +72,7 @@ export class InputManager {
       }
     }, { passive: true });
     window.addEventListener('touchmove', (e) => {
+      if (e.target && e.target.tagName !== 'CANVAS') return;
       if (this.touchBlocked()) return;
       for (const t of e.changedTouches) {
         if (t.identifier !== moveTouchId) continue;

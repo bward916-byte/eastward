@@ -54,7 +54,7 @@ async function boot() {
   const input = new InputManager();
   const hud = new HudRenderer();
   const dialogue = new Dialogue();
-  input.touchBlocked = () => dialogue.active;
+  input.touchBlocked = () => dialogue.blocking;
   const saveManager = new SaveManager(player);
 
   const audio = new AudioEngine();
@@ -182,11 +182,11 @@ async function boot() {
   const contextBtn = document.getElementById('context-btn');
   contextBtn.addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    if (!dialogue.active) input.pressInteract();
+    if (!dialogue.blocking) input.pressInteract();
   });
   attackBtn.addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    if (!dialogue.active) input.pressAttack();
+    if (!dialogue.blocking) input.pressAttack();
   });
 
   // combat defeat → resume at most recent checkpoint (Amendment 01 §A.2)
@@ -258,9 +258,9 @@ async function boot() {
       scene.intro?.update(dt);
       if (!scene.intro) {
         scene.encounters.update(dt, inp);
-        scene.town?.update(dt, inp.interactPressed && !dialogue.active);
+        scene.town?.update(dt, inp.interactPressed && !dialogue.blocking);
         // towns are non-combat zones (§8): weapons suppressed inside
-        if (inp.attackPressed && player.classDef && !dialogue.active && !scene.town?.inTown) {
+        if (inp.attackPressed && player.classDef && !dialogue.blocking && !scene.town?.inTown) {
           player.tryAttack(scene.encounters.creatures, projectiles);
         }
         for (let i = projectiles.length - 1; i >= 0; i--) {

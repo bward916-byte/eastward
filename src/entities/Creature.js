@@ -19,6 +19,12 @@ const KINDS = {
     targetableBy: ['melee', 'ground', 'air'],
     body: '#6d5a48', dark: '#52443a', bulk: 1.25,
   },
+  bat: {
+    hp: 14, speed: 150, aggroR: 300, attackR: 60,
+    windup: 0.35, lungeSpeed: 380, lungeTime: 0.4, damage: 8, cooldown: 1.4,
+    targetableBy: ['air'],            // §Q.1: melee cannot touch the sky
+    body: '#3a3444', dark: '#2a2632', bulk: 0.6, flying: true, flyH: 78,
+  },
 };
 
 export class Creature {
@@ -62,6 +68,10 @@ export class Creature {
     const dist = Math.abs(dx);
     this.timer -= dt;
 
+    const flyBase = this.def.flying
+      ? this.terrain.groundYAt(this.x) - this.def.flyH + Math.sin(this.animT * 3) * 8
+      : null;
+
     switch (this.state) {
       case 'patrol': {
         const wander = Math.sin(this.animT * 0.4 + this.homeX) * 55;
@@ -82,13 +92,18 @@ export class Creature {
         break;
       case 'lunge':
         this.x += this.facing * d.lungeSpeed * dt;
-        if (dist < 26 && Math.abs(player.y - this.y) < 40) {
+        if (this.def.flying) this.y += (player.y - 34 - this.y) * 6 * dt;  // swoop
+        if (dist < 26 && Math.abs(player.y - 30 - this.y) < (this.def.flying ? 34 : 40) + 30) {
           player.takeDamage(d.damage, this.x);
         }
         if (this.timer <= 0) { this.state = 'chase'; this.timer = d.cooldown; }
         break;
     }
-    this.y = this.terrain.groundYAt(this.x);
+    if (this.def.flying) {
+      if (this.state !== 'lunge') this.y += (flyBase - this.y) * 4 * dt;
+    } else {
+      this.y = this.terrain.groundYAt(this.x);
+    }
   }
 
   render(ctx) {
@@ -106,6 +121,30 @@ export class Creature {
     const dark = this.flash > 0 ? '#d0d0d0' : this.def.dark;
     const bulk = this.def.bulk ?? 1;
 
+    // flying: wings instead of legs
+    if (this.def.flying) {
+      const flap = Math.sin(t * 16) * 0.9;
+      ctx.fillStyle = dark;
+      for (const s of [1, -1]) {
+        ctx.beginPath();
+        ctx.moveTo(0, -4);
+        ctx.quadraticCurveTo(s * 14, -10 - flap * 7, s * 20, -2 - flap * 10);
+        ctx.quadraticCurveTo(s * 12, 0, 0, 0);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.fillStyle = body;
+      ctx.beginPath(); ctx.ellipse(0, -3, 6, 5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#d8b04a';
+      ctx.beginPath(); ctx.arc(this.facing * 3, -4, 1.1, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      if (!this.dead && this.hp < this.def.hp) {
+        ctx.fillStyle = 'rgba(12,16,10,0.55)';
+        ctx.fillRect(this.x - 11, this.y - 24, 22, 3);
+        ctx.fillStyle = '#c85a4a';
+        ctx.fillRect(this.x - 10, this.y - 23.5, 20 * clamp(this.hp / this.def.hp, 0, 1), 2);
+      }
+      return;
+    }
     // legs
     ctx.strokeStyle = dark;
     ctx.lineWidth = 3.5;

@@ -1,0 +1,131 @@
+{
+  "id": "mountain-cave",
+  "name": "UNDER THE MOUNTAIN",
+  "palette": {
+    "skyTop": "#0a0d16",
+    "skyBottom": "#141824",
+    "sun": "#3a4458",
+    "l2Base": "#161c2a",
+    "l2Accent": "#1e2636",
+    "l3Base": "#121826",
+    "l3Accent": "#1a2232",
+    "l4Base": "#0e141e",
+    "l4Accent": "#161e2c",
+    "l5Base": "#0a0f18",
+    "l5Accent": "#121a26",
+    "groundTop": "#2a3040",
+    "groundDeep": "#1e2430",
+    "dirt": "#343a48",
+    "fogTint": "rgba(60, 80, 120, 0.1)"
+  },
+  "layerScroll": {
+    "l2": 0.05,
+    "l3": 0.15,
+    "l4": 0.35,
+    "l5": 0.8
+  },
+  "groundY": 350,
+  "grassDensity": 0.0,
+  "caveLight": true,
+  "terrain": {
+    "points": [
+      [
+        0,
+        340
+      ],
+      [
+        600,
+        360
+      ],
+      [
+        1200,
+        350
+      ],
+      [
+        1800,
+        380
+      ],
+      [
+        2400,
+        360
+      ],
+      [
+        3000,
+        350
+      ],
+      [
+        3400,
+        340
+      ]
+    ]
+  },
+  "environment": {
+    "dayNight": false,
+    "weather": false
+  },
+  "audio": {
+    "root": 45,
+    "mode": "minorPent",
+    "tempo": 46,
+    "chord": [
+      33,
+      40,
+      45,
+      52
+    ],
+    "brightness": 320,
+    "pluckDensity": 0.08,
+    "windBase": 0.04
+  },
+  "checkpoints": [
+    {
+      "id": "cave-mouth",
+      "x": 200,
+      "type": "cairn"
+    },
+    {
+      "id": "cave-camp",
+      "x": 2100,
+      "type": "campfire"
+    }
+  ],
+  "encounters": [
+    {
+      "id": "cave-crystal-1",
+      "type": "interest",
+      "x": 800
+    },
+    {
+      "id": "cave-boulder",
+      "type": "challenge",
+      "kind": "boulder",
+      "x": 1100
+    },
+    {
+      "id": "cave-bats",
+      "type": "creature",
+      "kind": "bat",
+      "count": 3,
+      "x": 1800,
+      "blocking": false
+    },
+    {
+      "id": "cave-vault",
+      "type": "lock",
+      "x": 2400,
+      "reward": {
+        "artifacts": 2,
+        "gold": 25
+      }
+    },
+    {
+      "id": "cave-crystal-2",
+      "type": "interest",
+      "x": 2900
+    }
+  ],
+  "exitEast": {
+    "to": "mountain-east",
+    "x": 3300
+  }
+}

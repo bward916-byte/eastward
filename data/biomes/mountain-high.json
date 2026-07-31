@@ -1,0 +1,168 @@
+{
+  "id": "mountain-high",
+  "name": "THE HIGH ROUTE",
+  "palette": {
+    "skyTop": "#7a98bc",
+    "skyBottom": "#c8d0da",
+    "sun": "#f4f0dc",
+    "l2Base": "#9aa4b0",
+    "l2Accent": "#b8c0ca",
+    "l3Base": "#7a8694",
+    "l3Accent": "#94a0ac",
+    "l4Base": "#5c6874",
+    "l4Accent": "#74808c",
+    "l5Base": "#48525e",
+    "l5Accent": "#5a6570",
+    "groundTop": "#e8ecf0",
+    "groundDeep": "#c0c8d2",
+    "dirt": "#8a8f98",
+    "fogTint": "rgba(230, 236, 244, 0.24)"
+  },
+  "layerScroll": {
+    "l2": 0.05,
+    "l3": 0.15,
+    "l4": 0.35,
+    "l5": 0.8
+  },
+  "groundY": 340,
+  "grassDensity": 0.0,
+  "terrain": {
+    "points": [
+      [
+        0,
+        340
+      ],
+      [
+        400,
+        330
+      ],
+      [
+        560,
+        140
+      ],
+      [
+        900,
+        120
+      ],
+      [
+        1100,
+        -60
+      ],
+      [
+        1500,
+        -80
+      ],
+      [
+        1700,
+        -240
+      ],
+      [
+        2300,
+        -260
+      ],
+      [
+        2900,
+        -100
+      ],
+      [
+        3400,
+        60
+      ],
+      [
+        3800,
+        80
+      ]
+    ]
+  },
+  "snow": {
+    "zones": [
+      {
+        "from": 0,
+        "to": 1500,
+        "depth": 2
+      },
+      {
+        "from": 1500,
+        "to": 1700,
+        "depth": 3
+      },
+      {
+        "from": 1700,
+        "to": 2900,
+        "depth": 2
+      },
+      {
+        "from": 2900,
+        "to": 99999,
+        "depth": 1
+      }
+    ]
+  },
+  "environment": {
+    "dayNight": true,
+    "weather": true
+  },
+  "wind": {
+    "base": 0.3,
+    "gustiness": 0.7,
+    "prevailing": -1
+  },
+  "weather": {
+    "clear": 0.2,
+    "blizzard": 0.35,
+    "snowfall": 0.3,
+    "fog": 0.15
+  },
+  "audio": {
+    "root": 59,
+    "mode": "minorPent",
+    "tempo": 50,
+    "chord": [
+      47,
+      54,
+      59,
+      66,
+      71
+    ],
+    "brightness": 600,
+    "pluckDensity": 0.12,
+    "windBase": 0.3
+  },
+  "checkpoints": [
+    {
+      "id": "high-base",
+      "x": 150,
+      "type": "cairn"
+    },
+    {
+      "id": "high-ledge",
+      "x": 1550,
+      "type": "campfire"
+    },
+    {
+      "id": "high-descent",
+      "x": 3600,
+      "type": "shrine"
+    }
+  ],
+  "encounters": [
+    {
+      "id": "high-cache",
+      "type": "interest",
+      "x": 2000,
+      "reward": {
+        "artifacts": 2,
+        "gold": 25
+      }
+    },
+    {
+      "id": "high-relic",
+      "type": "interest",
+      "x": 3200
+    }
+  ],
+  "exitEast": {
+    "to": "mountain-east",
+    "x": 3700
+  }
+}

@@ -3,7 +3,11 @@
   "biomes": [
     "intro",
     "meadow",
-    "forest"
+    "forest",
+    "mountain",
+    "mountain-high",
+    "mountain-cave",
+    "mountain-east"
   ],
   "classes": [
     "thief",

@@ -32,6 +32,7 @@ export class EncounterManager {
     this._combat = false;
     this.creatures = [];
     this.onClassChosen = null;   // main provides (classId) => void
+    this.onBranchChosen = null;  // main provides (biomeId) => void (§C multi-path)
   }
 
   getFlags() { return this.encounters.filter(e => e.resolved).map(e => e.id); }
@@ -76,8 +77,25 @@ export class EncounterManager {
           e.sparkle = 1;
           bus.emit('challengePassed', { id: e.id });
         }
-        if (!e.resolved && dist > 0) maxX = Math.min(maxX, e.x - 42);
+        if (!e.resolved && dist > 0 && e.blocking !== false) maxX = Math.min(maxX, e.x - 42);
         e._showAttackHint = e.spawned && !e.resolved && Math.abs(dist) < 320;
+        continue;
+      }
+
+      if (e.type === 'branch') {
+        if (!e.resolved && dist > 0) maxX = Math.min(maxX, e.x - 46);
+        if (!e._dialogueOpen && dist > 0 && dist < 80) {
+          e._dialogueOpen = true;
+          this._runBranch(e);
+        }
+        continue;
+      }
+
+      if (e.type === 'lock') {
+        if (!e.resolved && Math.abs(dist) < 44 && input.interactPressed && !e._dialogueOpen) {
+          e._dialogueOpen = true;
+          this._runLock(e).finally(() => { e._dialogueOpen = false; });
+        }
         continue;
       }
 
@@ -94,7 +112,8 @@ export class EncounterManager {
         if (Math.abs(dist) < 26) {
           e.resolved = true;
           e.sparkle = 1.2;
-          p.artifacts += 1;
+          p.artifacts += e.reward?.artifacts ?? 1;   // route-reward caches (§C.2)
+          if (e.reward?.gold) p.gold += e.reward.gold;
           bus.emit('interestCollected', { id: e.id });
         }
         continue;
@@ -108,12 +127,19 @@ export class EncounterManager {
         this._runAdventure(e);
       }
 
-      if (e.type === 'challenge' && e.kind === 'push') {
+      if (e.type === 'challenge' && (e.kind === 'push' || e.kind === 'boulder')) {
+        if (e.kind === 'boulder' && e._need == null) {
+          // §C.2: Wizard telekinesis (mana), Fighter strength, others patience
+          if (p.classId === 'wizard' && p.mana >= 15) { e._need = 0.9; e._tk = true; p.mana -= 15; }
+          else if (p.classId === 'fighter') e._need = 2.0;
+          else e._need = 3.2;
+        }
+        const need = e.kind === 'boulder' ? e._need ?? 3.2 : PUSH_TIME;
         const pushing = dist > 0 && dist < 60 && input.moveDir === 1 && p.grounded && p.stamina > 2;
         if (pushing) {
           e.progress += dt;
-          p.stamina -= PUSH_DRAIN * dt;
-          if (e.progress >= PUSH_TIME) {
+          if (!e._tk) p.stamina -= PUSH_DRAIN * dt;
+          if (e.progress >= need) {
             e.resolved = true;
             e.sparkle = 1;
             bus.emit('challengePassed', { id: e.id });
@@ -121,6 +147,7 @@ export class EncounterManager {
         } else if (e.progress > 0) {
           e.progress = Math.max(0, e.progress - dt * 0.6); // it settles back
         }
+        e._needCache = need;
       }
     }
 
@@ -135,6 +162,34 @@ export class EncounterManager {
     // tension layer on approach, off when clear (§H.2 wiring)
     if (anyNear && !this._tension) { this._tension = true; bus.emit('challengeApproaching'); }
     else if (!anyNear && this._tension) { this._tension = false; bus.emit('challengePassed', { id: null }); }
+  }
+
+  async _runBranch(e) {
+    const idx = await this.dialogue.ask(e.lines, e.choices, { speaker: e.speaker ?? '' });
+    e.resolved = true;
+    bus.emit('branchChosen', { route: e.routes[idx] });
+    this.onBranchChosen?.(e.routes[idx]);
+  }
+
+  async _runLock(e) {
+    const p = this.player;
+    if (p.classId === 'thief') {
+      e.resolved = true;
+      e.sparkle = 1.2;
+      p.artifacts += e.reward?.artifacts ?? 1;
+      if (e.reward?.gold) p.gold += e.reward.gold;
+      bus.emit('interestCollected', { id: e.id });
+      await this.dialogue.say(["The lock gives with a soft click. Quick hands earn quiet rewards."], { autoMs: 3000 });
+    } else if (Math.random() < 0.3) {
+      e.resolved = true;
+      e.sparkle = 1.2;
+      p.artifacts += e.reward?.artifacts ?? 1;
+      if (e.reward?.gold) p.gold += e.reward.gold;
+      bus.emit('interestCollected', { id: e.id });
+      await this.dialogue.say(["Clumsy work — but the old lock finally gives."], { autoMs: 3000 });
+    } else {
+      await this.dialogue.say(["The lock resists. A defter hand would make short work of it."], { autoMs: 2800 });
+    }
   }
 
   async _runRite(e) {
@@ -171,6 +226,8 @@ export class EncounterManager {
   render(ctx, time) {
     for (const e of this.encounters) {
       if (e.type === 'adventure') this._renderNPC(ctx, e, time);
+      else if (e.type === 'branch') this._renderBranch(ctx, e, time);
+      else if (e.type === 'lock') this._renderVault(ctx, e, time);
       else if (e.type === 'rite') this._renderRite(ctx, e, time);
       else if (e.type === 'creature' && e._showAttackHint) {
         const hx = e.x, hy = this.terrain.groundYAt(e.x) - 92;
@@ -303,9 +360,69 @@ export class EncounterManager {
     ctx.stroke();
   }
 
+  _renderBranch(ctx, e, time) {
+    const x = e.x, y = e.y;
+    // weathered double-marker: one arm up-slope, one to the dark
+    ctx.fillStyle = '#6a6458';
+    ctx.fillRect(x - 4, y - 62, 8, 62);
+    ctx.save();
+    ctx.translate(x, y - 54); ctx.rotate(-0.5);
+    ctx.fillStyle = '#7a746a'; ctx.fillRect(0, -5, 34, 10);
+    ctx.restore();
+    ctx.save();
+    ctx.translate(x, y - 36); ctx.rotate(0.35);
+    ctx.fillStyle = '#5a5464'; ctx.fillRect(0, -5, 34, 10);
+    ctx.restore();
+  }
+
+  _renderVault(ctx, e, time) {
+    const x = e.x, y = e.y;
+    ctx.fillStyle = '#3a4050';
+    ctx.beginPath();
+    ctx.moveTo(x - 22, y); ctx.lineTo(x - 16, y - 34); ctx.lineTo(x + 16, y - 34); ctx.lineTo(x + 22, y);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = e.resolved ? '#1a2030' : '#565e70';
+    ctx.fillRect(x - 10, y - 26, 20, 26);
+    if (!e.resolved) {
+      ctx.fillStyle = '#c9a94a';
+      ctx.beginPath(); ctx.arc(x, y - 13, 3.2, 0, Math.PI * 2); ctx.fill();
+      const g = 0.5 + Math.sin(time * 3 + e.x) * 0.4;
+      ctx.fillStyle = `rgba(240, 236, 214, ${0.5 + g * 0.3})`;
+      ctx.font = '11px "Trebuchet MS", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('E · sealed vault', x, y - 46);
+      ctx.textAlign = 'left';
+    }
+  }
+
   _renderTree(ctx, e, time) {
     const x = e.x, y = e.y;
-    const t = e.resolved ? 1 : clamp(e.progress / PUSH_TIME, 0, 1);
+    const need = e._needCache ?? PUSH_TIME;
+    const t = e.resolved ? 1 : clamp(e.progress / need, 0, 1);
+    if (e.kind === 'boulder') {
+      ctx.save();
+      ctx.translate(x + t * 46, y);
+      ctx.rotate(t * 2.4);
+      ctx.fillStyle = e._tk && !e.resolved ? '#6a7a9c' : '#5a6068';
+      ctx.strokeStyle = '#3e444c';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-20, 0); ctx.lineTo(-14, -30); ctx.lineTo(4, -36); ctx.lineTo(19, -22); ctx.lineTo(21, 0);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      if (e._tk && !e.resolved) {
+        ctx.strokeStyle = `rgba(150, 180, 255, ${0.5 + Math.sin(time * 8) * 0.3})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(0, -18, 28, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.restore();
+      if (!e.resolved && e.progress > 0.05) {
+        ctx.fillStyle = 'rgba(12, 16, 10, 0.55)';
+        ctx.fillRect(x - 24, y - 56, 48, 6);
+        ctx.fillStyle = e._tk ? '#7a9ae0' : '#e0b23c';
+        ctx.fillRect(x - 23, y - 55, 46 * t, 4);
+      }
+      return;
+    }
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(-0.12 - t * 1.15);      // pushes up and over as progress builds

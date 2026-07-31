@@ -89,6 +89,7 @@ export class Player {
     this._lastStage = 'Child';
     this._rig = rigParams(0);
     this.injuries = [];               // {kind, t} — §12, recoverable always
+    this.snowDepth = 0;               // effective tier 0–3, set by main (§M.2)
     this.swingT = 0;           // fighter swipe anim
     this.iframes = 0;
     this.hurtFlash = 0;
@@ -260,6 +261,11 @@ export class Player {
       }
       let targetVx = wantDir * BASE_SPEED * mult * this.speedBonus * this.windSpeedMod;
 
+      // snow depth wading (§M.2): deeper = slower + draining
+      if (this.grounded && this.snowDepth > 0 && Math.abs(targetVx) > 5) {
+        targetVx *= [1, 0.93, 0.75, 0.55][this.snowDepth] ?? 1;
+        this.stamina -= [0, 0.5, 3, 6][this.snowDepth] * dt;
+      }
       // slope projection + scramble penalty (§3.3)
       if (this.grounded && targetVx !== 0) {
         const movingUp = Math.sign(targetVx) === ascendDir && absAng > 0.02;
@@ -475,6 +481,17 @@ export class Player {
     ctx.beginPath();
     ctx.arc(headX - this.facing, headY - 2, hr * 0.93, Math.PI * 0.9, Math.PI * 2.1);
     ctx.fill();
+
+    // snow wading — feet sink to a matching depth (§M.2)
+    if (this.snowDepth > 0 && this.grounded) {
+      ctx.save();
+      ctx.rotate(-(lean + rig.stoop * this.facing));
+      ctx.fillStyle = 'rgba(238, 244, 250, 0.85)';
+      ctx.beginPath();
+      ctx.ellipse(0, 21, 15 + this.snowDepth * 2, 3 + this.snowDepth * 2.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
 
     // fighter swipe arc — brief, readable, not flashy
     if (this.swingT > 0 && this.classDef?.attack === 'swipe') {

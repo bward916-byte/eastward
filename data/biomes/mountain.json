@@ -1,0 +1,155 @@
+{
+  "id": "mountain",
+  "name": "THE MOUNTAIN PASS",
+  "palette": {
+    "skyTop": "#8aa8c8",
+    "skyBottom": "#d8dde4",
+    "sun": "#f4f0dc",
+    "l2Base": "#9aa4b0",
+    "l2Accent": "#b8c0ca",
+    "l3Base": "#7a8694",
+    "l3Accent": "#94a0ac",
+    "l4Base": "#5c6874",
+    "l4Accent": "#74808c",
+    "l5Base": "#48525e",
+    "l5Accent": "#5a6570",
+    "groundTop": "#e8ecf0",
+    "groundDeep": "#c0c8d2",
+    "dirt": "#8a8f98",
+    "fogTint": "rgba(220, 228, 236, 0.18)"
+  },
+  "layerScroll": {
+    "l2": 0.05,
+    "l3": 0.15,
+    "l4": 0.35,
+    "l5": 0.8
+  },
+  "groundY": 520,
+  "grassDensity": 0.03,
+  "terrain": {
+    "points": [
+      [
+        0,
+        520
+      ],
+      [
+        800,
+        480
+      ],
+      [
+        1600,
+        430
+      ],
+      [
+        2200,
+        380
+      ],
+      [
+        2800,
+        350
+      ],
+      [
+        3400,
+        340
+      ]
+    ]
+  },
+  "snow": {
+    "zones": [
+      {
+        "from": 1400,
+        "to": 2200,
+        "depth": 1
+      },
+      {
+        "from": 2200,
+        "to": 2600,
+        "depth": 2
+      },
+      {
+        "from": 2600,
+        "to": 99999,
+        "depth": 1
+      }
+    ]
+  },
+  "environment": {
+    "dayNight": true,
+    "weather": true
+  },
+  "wind": {
+    "base": 0.18,
+    "gustiness": 0.5,
+    "prevailing": -1
+  },
+  "weather": {
+    "clear": 0.3,
+    "gust": 0.2,
+    "snowfall": 0.35,
+    "fog": 0.15
+  },
+  "audio": {
+    "root": 59,
+    "mode": "minorPent",
+    "tempo": 54,
+    "chord": [
+      47,
+      54,
+      59,
+      66
+    ],
+    "brightness": 700,
+    "pluckDensity": 0.2,
+    "windBase": 0.18
+  },
+  "checkpoints": [
+    {
+      "id": "mtn-gate",
+      "x": 300,
+      "type": "cairn"
+    },
+    {
+      "id": "mtn-shrine",
+      "x": 2700,
+      "type": "shrine"
+    }
+  ],
+  "encounters": [
+    {
+      "id": "mtn-guide",
+      "type": "adventure",
+      "x": 1200,
+      "speaker": "Guide",
+      "lines": [
+        "Higher than it looks, colder than it feels. You are the searcher, then.",
+        "They went over \u2014 or under, none could say. The peak breaks two ways ahead.",
+        "The high climb is shortest, if your hands are trained for it. The caves are kinder to those who are not."
+      ],
+      "choices": [
+        "Which way would you go?",
+        "Press on"
+      ],
+      "responses": [
+        "Me? I would go where my hands are strongest. So should you.",
+        "Then go warm and go quick. Storms come fast up here."
+      ]
+    },
+    {
+      "id": "mtn-branch",
+      "type": "branch",
+      "x": 2950,
+      "speaker": "",
+      "lines": [
+        "The path splits at a weathered marker. Above: the climb, into the wind. Below: a cave mouth, dark and still."
+      ],
+      "choices": [
+        "The high route \u2014 climb over (Climbing favored)",
+        "The low route \u2014 through the caves"
+      ],
+      "routes": [
+        "mountain-high",
+        "mountain-cave"
+      ]
+    }
+  ]
+}

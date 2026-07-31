@@ -15,6 +15,7 @@ export const CLIMB_MAX = 80 * DEG;
 export class TerrainSpline {
   constructor(biome) {
     this.baseY = biome.groundY;
+    this.snowZones = biome.snow?.zones ?? [];
     const pts = biome.terrain?.points ?? [[0, this.baseY], [1e6, this.baseY]];
     this.points = pts.slice().sort((a, b) => a[0] - b[0]);
   }
@@ -52,6 +53,14 @@ export class TerrainSpline {
   }
 
   angleAt(x) { return Math.abs(this.slopeAt(x)); }
+
+  /** Snow depth tier 0–3 at x (Amendment 06 §M.2). */
+  snowDepthAt(x) {
+    for (const z of this.snowZones) {
+      if (x >= z.from && x < z.to) return z.depth;
+    }
+    return 0;
+  }
 
   /** @returns {'walk'|'scramble'|'climb'} */
   tierAt(x) {

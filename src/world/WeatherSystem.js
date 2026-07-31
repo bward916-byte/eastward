@@ -9,10 +9,12 @@ import { bus } from '../core/EventBus.js';
 import { clamp, damp } from '../core/utils.js';
 
 const STATES = {
-  clear: { rain: 0, fog: 0, windBoost: 0 },
-  gust:  { rain: 0, fog: 0, windBoost: 0.5 },
-  rain:  { rain: 0.9, fog: 0.18, windBoost: 0.22 },
-  fog:   { rain: 0, fog: 0.85, windBoost: -0.05 },
+  clear:    { rain: 0, fog: 0, windBoost: 0, snow: 0 },
+  gust:     { rain: 0, fog: 0, windBoost: 0.5, snow: 0 },
+  rain:     { rain: 0.9, fog: 0.18, windBoost: 0.22, snow: 0 },
+  fog:      { rain: 0, fog: 0.85, windBoost: -0.05, snow: 0 },
+  snowfall: { rain: 0, fog: 0.12, windBoost: 0.15, snow: 0.55 },
+  blizzard: { rain: 0, fog: 0.45, windBoost: 0.85, snow: 0.95 },  // §M.2 major event
 };
 const RAIN_COUNT = 150;
 
@@ -24,7 +26,9 @@ export class WeatherSystem {
     this.rainLevel = 0;
     this.fogLevel = 0;
     this.windBoost = 0;
+    this.snowLevel = 0;
     this.drops = null;
+    this.flakes = null;
   }
 
   setBiome(def) {
@@ -53,6 +57,22 @@ export class WeatherSystem {
     this.rainLevel = damp(this.rainLevel, target.rain, 0.5, dt);
     this.fogLevel = damp(this.fogLevel, target.fog, 0.5, dt);
     this.windBoost = damp(this.windBoost, target.windBoost, 0.5, dt);
+    this.snowLevel = damp(this.snowLevel, target.snow ?? 0, 0.4, dt);
+
+    if (this.snowLevel > 0.02) {
+      if (!this.flakes) {
+        this.flakes = Array.from({ length: 130 }, () => ({
+          x: Math.random(), y: Math.random(), spd: 55 + Math.random() * 85, ph: Math.random() * 7,
+        }));
+      }
+      const w2 = camera.viewW, h2 = camera.viewH;
+      for (const f of this.flakes) {
+        f.y += f.spd * dt / h2;
+        f.x += (wind.value * 260 + Math.sin(f.ph + f.y * 9) * 22) * dt / w2;
+        if (f.y > 1) { f.y -= 1.03; f.x = Math.random(); }
+        if (f.x > 1.05) f.x -= 1.1; else if (f.x < -0.05) f.x += 1.1;
+      }
+    }
 
     if (this.rainLevel > 0.02) {
       if (!this.drops) {
@@ -74,6 +94,9 @@ export class WeatherSystem {
   /** Wet-footing modifier (§13.3: mud slows Run). */
   get speedMod() { return 1 - this.rainLevel * 0.08; }
 
+  /** Blizzard raises effective snow depth a tier while raging (§M.2). */
+  get snowBoost() { return this.state === 'blizzard' && this.snowLevel > 0.5 ? 1 : 0; }
+
   render(ctx, camera, windValue) {
     const w = camera.viewW, h = camera.viewH;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -91,6 +114,17 @@ export class WeatherSystem {
         ctx.lineTo(x + slant, y + 13);
       }
       ctx.stroke();
+    }
+
+    if (this.snowLevel > 0.02 && this.flakes) {
+      ctx.fillStyle = `rgba(240, 246, 252, ${0.5 * this.snowLevel})`;
+      const visible = Math.floor(130 * clamp(this.snowLevel, 0, 1));
+      for (let i = 0; i < visible; i++) {
+        const f = this.flakes[i];
+        ctx.beginPath();
+        ctx.arc(f.x * w, f.y * h, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     if (this.fogLevel > 0.02) {

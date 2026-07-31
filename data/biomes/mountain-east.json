@@ -1,0 +1,119 @@
+{
+  "id": "mountain-east",
+  "name": "THE FAR SLOPES",
+  "palette": {
+    "skyTop": "#86b0d8",
+    "skyBottom": "#e8d8b0",
+    "sun": "#fff0c0",
+    "l2Base": "#8a9aa8",
+    "l2Accent": "#a8b8c0",
+    "l3Base": "#6a8468",
+    "l3Accent": "#84a07c",
+    "l4Base": "#4e7248",
+    "l4Accent": "#689058",
+    "l5Base": "#3a5c38",
+    "l5Accent": "#4e7a48",
+    "groundTop": "#6a9450",
+    "groundDeep": "#527840",
+    "dirt": "#8a6f4d",
+    "fogTint": "rgba(232, 216, 176, 0.12)"
+  },
+  "layerScroll": {
+    "l2": 0.05,
+    "l3": 0.15,
+    "l4": 0.35,
+    "l5": 0.8
+  },
+  "groundY": 350,
+  "grassDensity": 0.09,
+  "terrain": {
+    "points": [
+      [
+        0,
+        350
+      ],
+      [
+        500,
+        380
+      ],
+      [
+        1100,
+        460
+      ],
+      [
+        1800,
+        510
+      ],
+      [
+        2600,
+        520
+      ]
+    ]
+  },
+  "snow": {
+    "zones": [
+      {
+        "from": 0,
+        "to": 800,
+        "depth": 1
+      }
+    ]
+  },
+  "environment": {
+    "dayNight": true,
+    "weather": true
+  },
+  "wind": {
+    "base": 0.1,
+    "gustiness": 0.3,
+    "prevailing": 1
+  },
+  "weather": {
+    "clear": 0.5,
+    "gust": 0.2,
+    "rain": 0.15,
+    "fog": 0.15
+  },
+  "audio": {
+    "root": 57,
+    "mode": "majorPent",
+    "tempo": 60,
+    "chord": [
+      45,
+      52,
+      57,
+      64
+    ],
+    "brightness": 1100,
+    "pluckDensity": 0.35,
+    "windBase": 0.1
+  },
+  "checkpoints": [
+    {
+      "id": "east-shrine",
+      "x": 400,
+      "type": "shrine"
+    }
+  ],
+  "encounters": [
+    {
+      "id": "east-embers",
+      "type": "adventure",
+      "x": 1300,
+      "speaker": "",
+      "lines": [
+        "A campfire ring beside the path. The ash is fresh \u2014 still faintly warm.",
+        "Whoever sat here left in no hurry. Heading east, down toward the green."
+      ],
+      "choices": [
+        "Rest a moment by the embers",
+        "Hurry after them"
+      ],
+      "responses": [
+        "The warmth lingers. For the first time in a long while, the road ahead feels close.",
+        "Down the slopes, then. They cannot be far now."
+      ]
+    }
+  ],
+  "endX": 2300
+}

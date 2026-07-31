@@ -139,6 +139,7 @@ async function boot() {
     const env = biome.environment ?? { dayNight: true, weather: true };
     const town = biome.town ? new Town(biome.town, terrain, player, dialogue, dayNight) : null;
     const encounters = new EncounterManager(biome.encounters, terrain, player, dialogue, biome.endX ?? null);
+    encounters.onBranchChosen = (to) => transitionTo(to, 60);
     encounters.onClassChosen = (classId) => {
       player.applyClass(classId, classes[classId]);
       attackBtn.hidden = false;
@@ -224,9 +225,17 @@ async function boot() {
         player.windValue = 0;
         scene.parallax.setWind(0.35); // scripted night breeze
       }
-      // prolonged soaking risks a chill (§12 exposure — telegraphed by the rain itself)
-      if (scene.env.weather && weather.rainLevel > 0.55 && !scene.town?.inTown) {
-        player._drenchT = (player._drenchT ?? 0) + dt;
+      // snow depth (§M.2): terrain tier + blizzard boost
+      player.snowDepth = scene.env.weather
+        ? Math.min(3, scene.terrain.snowDepthAt(player.x) + weather.snowBoost)
+        : scene.terrain.snowDepthAt(player.x);
+
+      // prolonged soaking or blizzard exposure risks a chill (§12/§M.2)
+      const exposed = scene.env.weather && !scene.town?.inTown
+        && (weather.rainLevel > 0.55 || (weather.state === 'blizzard' && weather.snowLevel > 0.5));
+      if (exposed) {
+        const rate = weather.state === 'blizzard' ? 1.5 : 1;   // cold bites faster
+        player._drenchT = (player._drenchT ?? 0) + dt * rate;
         if (player._drenchT > 55) { player.addInjury('chill'); player._drenchT = 0; }
       } else if (player._drenchT > 0) {
         player._drenchT = Math.max(0, player._drenchT - dt * 2);
@@ -292,6 +301,19 @@ async function boot() {
       scene.parallax.renderForeground(ctx, camera);
       ctx.restore();
       if (scene.env.weather) weather.render(ctx, camera, wind.value);
+      // cave darkness with a light radius around the traveler (§13.6-adjacent)
+      if (scene.biome.caveLight) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        const sx = camera.viewW / 2 + (player.x - camera.x) * camera.zoom;
+        const sy = camera.viewH / 2 + (player.y - 30 - camera.y) * camera.zoom;
+        const r = 240 * camera.zoom;
+        const g = ctx.createRadialGradient(sx, sy, r * 0.25, sx, sy, r);
+        g.addColorStop(0, 'rgba(4, 6, 12, 0)');
+        g.addColorStop(0.75, 'rgba(4, 6, 12, 0.55)');
+        g.addColorStop(1, 'rgba(4, 6, 12, 0.9)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, camera.viewW, camera.viewH);
+      }
       if (sceneFade > 0) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.fillStyle = `rgba(6, 8, 12, ${sceneFade})`;

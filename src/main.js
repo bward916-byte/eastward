@@ -1,12 +1,14 @@
-// Eastward — Phase 1 boot.
-// Wires: InputManager → Player state machine → Camera → ParallaxRenderer → HUD,
-// driven by the fixed-timestep GameLoop. One meadow test biome, flat terrain.
+// Eastward — Phase 1 + Amendment 01 §A boot.
+// Wires: InputManager → Player → Checkpoints/SaveManager → Camera → renderers.
 
 import { GameLoop } from './core/GameLoop.js';
 import { InputManager } from './core/InputManager.js';
 import { Camera } from './core/Camera.js';
+import { SaveManager } from './core/SaveManager.js';
+import { bus } from './core/EventBus.js';
 import { Player } from './entities/Player.js';
 import { TerrainSpline } from './world/TerrainSpline.js';
+import { Checkpoint } from './world/Checkpoint.js';
 import { ParallaxRenderer } from './render/ParallaxRenderer.js';
 import { HudRenderer } from './render/HudRenderer.js';
 
@@ -32,22 +34,43 @@ async function boot() {
   const parallax = new ParallaxRenderer(biome, terrain);
   const hud = new HudRenderer();
 
-  // snap camera to start position
+  // Checkpoint markers authored in biome data (Amendment 01 §A.4)
+  const checkpoints = (biome.checkpoints ?? []).map(d => new Checkpoint(d, terrain));
+
+  // Checkpoint-only saves; resume at most recent checkpoint if one exists (§A.2)
+  const saveManager = new SaveManager(player);
+  const snap = saveManager.load();
+  if (snap) {
+    saveManager.applyTo(player, snap);
+    player.y = terrain.groundYAt(player.x);
+    // markers at/before the resumed checkpoint start already-reached (no re-fire)
+    for (const cp of checkpoints) {
+      if (cp.x <= player.x + 1) cp.reached = true;
+      cp.glow = 0;
+    }
+  }
+
+  bus.on('gameSaved', () => hud.flashSaved());
+
   camera.x = player.x + camera.viewW * camera.eastBias;
   camera.y = player.y - camera.viewH * 0.12;
 
+  let worldTime = 0;
   const loop = new GameLoop(
     (dt) => {
+      worldTime += dt;
       input.update(dt);
       player.update(dt, input, terrain);
+      for (const cp of checkpoints) cp.update(dt, player);
       camera.update(dt, player);
       parallax.update(dt);
     },
     (alpha) => {
-      parallax.render(ctx, camera);       // L1–L4 + L6 ground
+      parallax.render(ctx, camera);            // L1–L4 + L6 ground
       camera.applyTransform(ctx);
+      for (const cp of checkpoints) cp.render(ctx, worldTime);
       player.render(ctx, alpha);
-      parallax.renderForeground(ctx, camera); // sparse L5 fringe in front
+      parallax.renderForeground(ctx, camera);  // sparse L5 fringe in front
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       hud.update(player);
     }

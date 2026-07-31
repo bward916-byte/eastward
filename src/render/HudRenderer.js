@@ -9,6 +9,17 @@ export class HudRenderer {
     this.endurance = document.getElementById('bar-endurance');
     this.stateEl = document.getElementById('hud-state');
     this.portrait = document.getElementById('hud-portrait');
+    this.saveIcon = document.getElementById('save-indicator');
+    this._saveTimer = null;
+  }
+
+  /** Small unobtrusive confirmation on checkpoint save (Amendment 01 §A.2). */
+  flashSaved() {
+    if (!this.saveIcon) return;
+    this.saveIcon.classList.add('visible');
+    clearTimeout(this._saveTimer);
+    this._saveTimer = setTimeout(
+      () => this.saveIcon.classList.remove('visible'), 2200);
   }
 
   update(player) {

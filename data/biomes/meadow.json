@@ -20,5 +20,10 @@
   },
   "layerScroll": { "l2": 0.05, "l3": 0.15, "l4": 0.35, "l5": 0.8 },
   "groundY": 520,
-  "grassDensity": 0.12
+  "grassDensity": 0.12,
+  "checkpoints": [
+    { "id": "meadow-start", "x": 140, "type": "cairn" },
+    { "id": "meadow-shrine", "x": 1900, "type": "shrine" },
+    { "id": "meadow-camp", "x": 3800, "type": "campfire" }
+  ]
 }

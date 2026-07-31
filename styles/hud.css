@@ -84,6 +84,25 @@
 }
 #hud-state.exhausted { color: #ff8f6b; border-color: rgba(255, 143, 107, 0.5); }
 
+/* Checkpoint save confirmation — small, corner, fades in/out (Amendment 01 §A.2) */
+#save-indicator {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: rgba(255, 240, 190, 0.95);
+  background: rgba(12, 16, 10, 0.55);
+  padding: 5px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 240, 190, 0.3);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  user-select: none;
+}
+#save-indicator.visible { opacity: 1; }
+
 #controls-hint {
   position: absolute;
   top: 10px;

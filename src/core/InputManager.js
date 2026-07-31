@@ -108,6 +108,13 @@ export class InputManager {
     this.jumpHeld = this._keys.has('up');
     this.jumpPressed = this._jumpEdge;
     this._jumpEdge = false;
+    this.attackPressed = this._attackEdge;
     this._attackEdge = false;
+    this.interactPressed = this._interactEdge;
+    this._interactEdge = false;
   }
+
+  /** Touch/UI button hooks. */
+  pressAttack() { this._attackEdge = true; }
+  pressInteract() { this._interactEdge = true; }
 }

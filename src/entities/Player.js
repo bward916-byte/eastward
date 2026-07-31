@@ -307,7 +307,9 @@ export class Player {
       this.vy += GRAVITY * dt;
       this.y += this.vy * dt;
       const g = terrain.groundYAt(this.x);
-      if (this.y >= g && this.vy >= 0) {
+      // contact with the surface lands regardless of vertical direction —
+      // jumping INTO a rising slope means hitting it, not sinking through
+      if (this.y >= g) {
         this.y = g;
         this.grounded = true;
         const drop = this.y - this._leaveGroundY;

@@ -214,7 +214,7 @@ export class ParallaxRenderer {
     for (let x = left; x <= right; x += 10) ctx.lineTo(x, this.terrain.groundYAt(x));
     ctx.lineTo(right, bottom);
     ctx.closePath();
-    const gy = this.terrain.groundYAt(camera.x);
+    const gy = this.terrain.baseY;   // stable anchor — camera-x ground height flickers over chasms
     const g = ctx.createLinearGradient(0, gy, 0, gy + 220);
     g.addColorStop(0, p.groundTop);
     g.addColorStop(0.18, p.groundDeep);

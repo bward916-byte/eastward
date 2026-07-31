@@ -179,15 +179,26 @@ async function boot() {
 
   bus.on('gameSaved', () => hud.flashSaved());
   bus.on('creatureSlain', () => { player.gold += 5; });   // pelts, abstracted (§10)
+
+  // Robust tap binding: iOS Safari's pointerdown on <button> is flaky, so
+  // listen to both pointerdown AND touchstart, deduped per tap.
+  function bindTap(el, fn) {
+    if (!el) return;
+    let last = 0;
+    const h = (e) => {
+      if (e.cancelable) e.preventDefault();
+      const now = performance.now();
+      if (now - last < 350) return;
+      last = now;
+      fn();
+    };
+    el.addEventListener('pointerdown', h);
+    el.addEventListener('touchstart', h, { passive: false });
+  }
+
   const contextBtn = document.getElementById('context-btn');
-  contextBtn.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    if (!dialogue.blocking) input.pressInteract();
-  });
-  attackBtn.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    if (!dialogue.blocking) input.pressAttack();
-  });
+  bindTap(contextBtn, () => { if (!dialogue.blocking) input.pressInteract(); });
+  bindTap(attackBtn, () => { if (!dialogue.blocking) input.pressAttack(); });
 
   // combat defeat → resume at most recent checkpoint (Amendment 01 §A.2)
   let respawning = false;
@@ -344,8 +355,8 @@ async function boot() {
   });
   const demoBtn = document.getElementById('demo-btn');
   demoBtn.hidden = !SHOW_DEMO;
-  demoBtn.addEventListener('pointerdown', () => {
-    if (!demo.active && !dialogue.active) demo.start();
+  bindTap(demoBtn, () => {
+    if (!demo.active && !dialogue.blocking) demo.start();
   });
 
   // --- Portable save codes (Amendment 07 §S) ---
@@ -354,21 +365,21 @@ async function boot() {
   const journeyCode = document.getElementById('journey-code');
   const journeyInput = document.getElementById('journey-input');
   const journeyError = document.getElementById('journey-error');
-  journeyBtn.addEventListener('pointerdown', () => {
+  bindTap(journeyBtn, () => {
     journeyError.hidden = true;
     journeyInput.value = '';
     journeyCode.value = saveManager.exportCode(scene.biome, manifest) ?? '(no saved journey yet)';
     journeyPanel.hidden = false;
   });
-  document.getElementById('journey-close').addEventListener('pointerdown', () => {
+  bindTap(document.getElementById('journey-close'), () => {
     journeyPanel.hidden = true;
   });
-  document.getElementById('journey-copy').addEventListener('pointerdown', async () => {
+  bindTap(document.getElementById('journey-copy'), async () => {
     try { await navigator.clipboard.writeText(journeyCode.value); } catch {
       journeyCode.select(); document.execCommand?.('copy');
     }
   });
-  document.getElementById('journey-load').addEventListener('pointerdown', async () => {
+  bindTap(document.getElementById('journey-load'), async () => {
     journeyError.hidden = true;
     const code = journeyInput.value.trim();
     if (!code) return;

@@ -112,8 +112,22 @@ export class DemoMode {
     this.captionEl = document.getElementById('demo-caption');
     this.uiEl = document.getElementById('demo-ui');
     this.dotsEl = document.getElementById('demo-dots');
-    document.getElementById('demo-skip')?.addEventListener('pointerdown', () => this.active && this._next());
-    document.getElementById('demo-exit')?.addEventListener('pointerdown', () => this.active && this.exit());
+    const tap = (id, fn) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      let last = 0;
+      const h = (e) => {
+        if (e.cancelable) e.preventDefault();
+        const now = performance.now();
+        if (now - last < 350) return;
+        last = now;
+        fn();
+      };
+      el.addEventListener('pointerdown', h);
+      el.addEventListener('touchstart', h, { passive: false });
+    };
+    tap('demo-skip', () => this.active && this._next());
+    tap('demo-exit', () => this.active && this.exit());
   }
 
   async start() {

@@ -393,3 +393,9 @@
   padding: 5px 13px;
   cursor: pointer;
 }
+
+/* Reliable taps on iOS */
+#attack-btn, #context-btn, #journey-btn, #demo-btn,
+#demo-controls button, .jp-row button, .dialogue-choice {
+  touch-action: manipulation;
+}

@@ -14,7 +14,7 @@ import { TerrainSpline } from './world/TerrainSpline.js';
 import { IntroTerrain } from './world/IntroTerrain.js';
 import { IntroSequence } from './world/IntroSequence.js';
 import { Checkpoint } from './world/Checkpoint.js';
-import { DayNightCycle } from './world/DayNightCycle.js';
+import { DayNightCycle, DAY_SECONDS } from './world/DayNightCycle.js';
 import { WindSystem } from './world/WindSystem.js';
 import { WeatherSystem } from './world/WeatherSystem.js';
 import { EncounterManager } from './world/EncounterManager.js';
@@ -182,8 +182,11 @@ async function boot() {
       worldTime += dt;
       input.update(dt);
 
-      // environment (§13.3/§13.4)
-      if (scene.env.dayNight) dayNight.update(dt);
+      // environment (§13.3/§13.4) + the aging clock (§5: time, not distance)
+      if (scene.env.dayNight) {
+        dayNight.update(dt);
+        player.ageDays += dt / DAY_SECONDS;
+      }
       if (scene.env.weather) {
         wind.update(dt, weather.windBoost);
         weather.update(dt, wind, camera);
@@ -195,6 +198,14 @@ async function boot() {
         player.windValue = 0;
         scene.parallax.setWind(0.35); // scripted night breeze
       }
+      // prolonged soaking risks a chill (§12 exposure — telegraphed by the rain itself)
+      if (scene.env.weather && weather.rainLevel > 0.55 && !scene.town?.inTown) {
+        player._drenchT = (player._drenchT ?? 0) + dt;
+        if (player._drenchT > 55) { player.addInjury('chill'); player._drenchT = 0; }
+      } else if (player._drenchT > 0) {
+        player._drenchT = Math.max(0, player._drenchT - dt * 2);
+      }
+
       audioSync += dt;
       if (audioSync > 0.5) {
         audioSync = 0;

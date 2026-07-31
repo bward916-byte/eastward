@@ -64,6 +64,18 @@ export class HudRenderer {
     this.stateEl.classList.toggle('exhausted',
       player.state === 'EXHAUSTED' || player.fatigueTimer > 0);
 
+    // per-limb injury + sickness overlays on the portrait (§12/§14)
+    const inj = (k) => player.injuries?.some(i => i.kind === k);
+    const set = (id, on, color) => {
+      const el = document.getElementById(id);
+      if (el) el.style.fill = on ? color : '';
+    };
+    set('p-leg-l', inj('limp'), '#e06a4a');
+    set('p-leg-r', inj('limp'), '#e06a4a');
+    set('p-arm-r', inj('arm'), '#e06a4a');
+    set('p-torso', inj('bruise'), '#c99a3c');
+    set('p-head', inj('chill'), '#9ac48a');
+
     // condition color: healthy-green → tired-amber → exhausted-red
     const worst = Math.min(stamPct / 100, endPct / 100);
     let color;

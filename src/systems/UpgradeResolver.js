@@ -21,6 +21,12 @@ export class UpgradeResolver {
   }
 
   apply(tier) {
+    // §U.3 major variant: an earned aging nudge (active now that §5 exists)
+    if (tier === 'major' && Math.random() < 0.45) {
+      this.player.ageDays += 0.6;
+      bus.emit('upgradeGranted', { tier, label: 'You feel the years — grown by the road' });
+      return;
+    }
     const pick = MINORS[Math.floor(Math.random() * MINORS.length)];
     const mult = tier === 'major' ? 2.6 : 1;
     if (pick.key === 'maxHealth') {

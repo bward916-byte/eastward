@@ -10,6 +10,9 @@ export class LevelUpNotification {
     this.bursts = [];
     this.labelEl = document.getElementById('levelup-label');
     this._labelTimer = null;
+    bus.on('ageStageChanged', ({ stage }) => {
+      bus.emit('upgradeGranted', { tier: 'major', label: `The years show — ${stage} now` });
+    });
     bus.on('upgradeGranted', ({ tier, label }) => {
       this.bursts.push({ t: 0, tier });
       music?.sting(tier === 'major' ? 'levelup-major' : 'levelup');

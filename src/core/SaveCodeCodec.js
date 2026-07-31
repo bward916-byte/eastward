@@ -6,7 +6,7 @@
 // arrays), never a hand-maintained mapping (§S.6). Zero dependencies.
 
 const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-const VERSION = 'E2';  // E1 codes predate gold/identified — cleanly rejected
+const VERSION = 'E3';  // E1/E2 codes predate aging/injuries — cleanly rejected
 
 function crc16(bytes) {
   let crc = 0xFFFF;
@@ -74,6 +74,14 @@ export function encodeSnapshot(snap, biome, manifest) {
   u8(b, snap.player.maxHealth ?? 100);
   u16(b, snap.player.xp ?? 0);
   u8(b, snap.player.level ?? 0);
+  u16(b, (snap.player.ageDays ?? 0) * 10);
+  const INJ = ['limp', 'arm', 'bruise', 'chill'];
+  let injBits = 0;
+  for (const k of snap.player.injuries ?? []) {
+    const idx = INJ.indexOf(k);
+    if (idx >= 0) injBits |= 1 << idx;
+  }
+  u8(b, injBits);
   // worldFlags as a bitfield over the biome's encounter order (§S.4.1)
   const encs = biome.encounters ?? [];
   const flags = new Set(snap.world?.flags ?? []);
@@ -135,6 +143,10 @@ export function decodeSnapshot(code, biome, manifest) {
     const maxHealth = r8();
     const xp = r16();
     const level = r8();
+    const ageDays = r16() / 10;
+    const injBits = r8();
+    const INJ = ['limp', 'arm', 'bruise', 'chill'];
+    const injuries = INJ.filter((_, idx) => injBits & (1 << idx));
     const encCount = r8();
     const encs = biome.encounters ?? [];
     if (encCount !== encs.length) return null; // data drift → incompatible code
@@ -150,7 +162,7 @@ export function decodeSnapshot(code, biome, manifest) {
       checkpointId,
       biome: biomeId,
       savedAt: Date.now(),
-      player: { x, facing, stamina, endurance, health, mana, artifacts, identified, gold, classId, skills, maxHealth, xp, level },
+      player: { x, facing, stamina, endurance, health, mana, artifacts, identified, gold, classId, skills, maxHealth, xp, level, ageDays, injuries },
       world: { timeOfDay, flags },
     };
   } catch {

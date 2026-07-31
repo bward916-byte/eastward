@@ -222,6 +222,10 @@
     "east": 8400,
     "services": [
       {
+        "type": "healer",
+        "x": 7300
+      },
+      {
         "type": "inn",
         "x": 7520
       },

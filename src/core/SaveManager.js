@@ -56,6 +56,8 @@ export class SaveManager {
         skills: { ...this.player.skills, climbSkill: this.player.climbSkill },
         xp: this.player.xp,
         level: this.player.level,
+        ageDays: this.player.ageDays,
+        injuries: this.player.injuries.map(i => i.kind),
       },
       // Reserved for later phases (schema stability — Amendment 01 §A.4):
       // health/injuries/sickness (§12), inventory, equipment, skills, class,
@@ -103,6 +105,8 @@ export class SaveManager {
     }
     player.xp = snap.player.xp ?? 0;
     player.level = snap.player.level ?? 0;
+    player.ageDays = snap.player.ageDays ?? 0;
+    player.injuries = (snap.player.injuries ?? []).map(k => ({ kind: k, t: 90 }));
   }
 
   /** Amendment 07 §S: export the CURRENT local checkpoint save as a code. */

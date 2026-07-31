@@ -9,8 +9,9 @@ import { bus } from '../core/EventBus.js';
 const NEAR_R = 52;
 const TRAIN_COST = { accuracy: 20, fightSpeed: 20, climbSkill: 20, autoDodge: 25 };
 const SELL_PRICE = 15;
-const SIGNS = { inn: '🛏', trainer: '⚔', sage: '👁', merchant: '⚖' };
-const NAMES = { inn: 'Inn', trainer: 'Trainer', sage: 'Sage', merchant: 'Merchant' };
+const SIGNS = { inn: '🛏', trainer: '⚔', sage: '👁', merchant: '⚖', healer: '✚' };
+const NAMES = { inn: 'Inn', trainer: 'Trainer', sage: 'Sage', merchant: 'Merchant', healer: 'Healer' };
+const CURE_COST = 10;
 
 export class Town {
   constructor(def, terrain, player, dialogue, dayNight) {
@@ -62,8 +63,11 @@ export class Town {
         ["Warm hearth, soft bed. Rest until morning?"],
         ["Rest (free)", "Not now"], { speaker: 'Innkeeper' });
       if (c === 0) {
-        p.stamina = p.staminaCeiling; p.endurance = 100; p.stamina = 100;
+        p.endurance = 100; p.stamina = 100;
         p.health = p.maxHealth; p.mana = p.maxMana;
+        p.injuries = [];                                // proper rest heals (§12)
+        const skipped = (0.32 - this.dayNight.phase + 1) % 1;   // sleep advances the age clock too (§5)
+        p.ageDays += skipped;
         this.dayNight.phase = 0.32;                     // morning (§8 inn rest)
         bus.emit('forceSave', { id: this.def.id });
         await d.say(["You wake rested. The road east waits."], { autoMs: 2600 });
@@ -111,6 +115,27 @@ export class Town {
         ], { speaker: 'Sage', autoMs: 3400 });
       } else {
         await d.say([`Identified. Worth a fair price at the merchant's scales.`], { speaker: 'Sage', autoMs: 2800 });
+      }
+      return;
+    }
+    if (s.type === 'healer') {
+      if (p.injuries.length === 0) {
+        await d.say(["Sound of limb and clear of eye. The road hasn't marked you yet."], { speaker: 'Healer', autoMs: 2800 });
+        return;
+      }
+      const names = { limp: 'a limp', arm: 'a bad arm', bruise: 'deep bruising', chill: 'a chill' };
+      const list = p.injuries.map(i => names[i.kind] ?? i.kind).join(', ');
+      const c = await d.ask(
+        [`You carry ${list}. It will mend on its own — or I can see to it now.`],
+        [`Treat me (${CURE_COST}g)`, 'It can wait'], { speaker: 'Healer' });
+      if (c === 0) {
+        if (p.gold < CURE_COST) {
+          await d.say(["No coin? Then rest well and go gently — time heals for free."], { speaker: 'Healer', autoMs: 3000 });
+          return;
+        }
+        p.gold -= CURE_COST;
+        p.injuries = [];
+        await d.say(["There. Mind the cliffs, and stay dry in the rain."], { speaker: 'Healer', autoMs: 2800 });
       }
       return;
     }

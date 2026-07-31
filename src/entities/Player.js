@@ -9,6 +9,7 @@ import { bus } from '../core/EventBus.js';
 import { SCRAMBLE_MIN, CLIMB_MIN } from '../world/TerrainSpline.js';
 import { nearestTarget } from './TargetAcquisition.js';
 import { CombatResolver } from '../systems/CombatResolver.js';
+import { rigParams } from './PlayerRig.js';
 import { Projectile } from './Projectile.js';
 
 // --- locomotion tunables --------------------------------------------------
@@ -84,6 +85,10 @@ export class Player {
     this.level = 0;
     this.dodgeT = 0;
     this.attackCooldown = 0;
+    this.ageDays = 0;                 // in-game days lived (§5)
+    this._lastStage = 'Child';
+    this._rig = rigParams(0);
+    this.injuries = [];               // {kind, t} — §12, recoverable always
     this.swingT = 0;           // fighter swipe anim
     this.iframes = 0;
     this.hurtFlash = 0;
@@ -104,6 +109,15 @@ export class Player {
     if (def.mana) { this.maxMana = def.mana; this.mana = def.mana; }
   }
 
+  hasInjury(kind) { return this.injuries.some(i => i.kind === kind); }
+
+  addInjury(kind) {
+    if (this.hasInjury(kind)) return;
+    const DUR = { limp: 150, arm: 150, bruise: 120, chill: 180 };
+    this.injuries.push({ kind, t: DUR[kind] ?? 120 });
+    bus.emit('injuryGained', { kind });
+  }
+
   takeDamage(n, fromX) {
     if (this.iframes > 0 || this.health <= 0) return;
     // passive Auto-Dodge (§T.4): trained chance to evade a landing attack
@@ -117,6 +131,10 @@ export class Player {
     this.iframes = 0.9;
     this.hurtFlash = 0.25;
     this.vx += Math.sign(this.x - fromX) * 150;
+    // heavy hits at low health can leave a lingering injury (§12)
+    if (this.health < 35 && this.health > 0 && Math.random() < 0.35) {
+      this.addInjury(Math.random() < 0.5 ? 'arm' : 'bruise');
+    }
     if (this.health <= 0) {
       this.health = 0;
       bus.emit('playerDefeated');
@@ -127,15 +145,19 @@ export class Player {
   tryAttack(creatures, projectiles) {
     const def = this.classDef;
     if (!def || this.attackCooldown > 0 || this.state === 'CLIMB' || this.state === 'SLIDE') return;
+    const armPen = this.hasInjury('arm');                    // §12: bad swing arm
+    const acc = this.skills.accuracy - (armPen ? 0.25 : 0);
+    const cdMult = armPen ? 1.3 : 1;
+    const dmg = Math.round(def.damage * this._rig.damageMult);
     if (def.attack === 'swipe') {
-      this.attackCooldown = CombatResolver.cooldownFor(def.cooldown, this.skills.fightSpeed);
+      this.attackCooldown = CombatResolver.cooldownFor(def.cooldown, this.skills.fightSpeed) * cdMult;
       this.swingT = 0.25;
       for (const c of creatures) {
         if (c.dead || !c.targetableBy.includes('melee')) continue;
         const dx = c.x - this.x;
         if (Math.sign(dx) === this.facing && Math.abs(dx) < def.range && Math.abs(c.y - this.y) < 55) {
           // §T.2: auto-aim directs, Accuracy decides — per-target roll on a cleave
-          if (CombatResolver.hitRoll(this.skills.accuracy)) c.takeDamage(def.damage, this.x);
+          if (CombatResolver.hitRoll(acc)) c.takeDamage(dmg, this.x);
         }
       }
       return;
@@ -144,17 +166,20 @@ export class Player {
       if (this.mana < def.manaCost) return;
       this.mana -= def.manaCost;
     }
-    this.attackCooldown = CombatResolver.cooldownFor(def.cooldown, this.skills.fightSpeed);
+    this.attackCooldown = CombatResolver.cooldownFor(def.cooldown, this.skills.fightSpeed) * cdMult;
     const target = nearestTarget(this.x, this.y - 20, creatures, def.range, 'ground')
       ?? nearestTarget(this.x, this.y - 20, creatures, def.range, 'air');
-    const willMiss = target && !CombatResolver.hitRoll(this.skills.accuracy);
+    const willMiss = target && !CombatResolver.hitRoll(acc);
     projectiles.push(new Projectile(
       def.attack === 'bolt' ? 'bolt' : 'knife',
-      this.x + this.facing * 10, this.y - 26, target, def, this.facing, willMiss
+      this.x + this.facing * 10, this.y - 26, target, { ...def, damage: dmg }, this.facing, willMiss
     ));
   }
 
-  get staminaCeiling() { return (this.endurance / ENDURANCE_MAX) * STAMINA_MAX; }
+  get staminaCeiling() {
+    const chill = this.hasInjury('chill') ? 0.8 : 1;        // §12 sickness
+    return (this.endurance / ENDURANCE_MAX) * STAMINA_MAX * chill;
+  }
   get exhausted() { return this.state === 'EXHAUSTED'; }
 
   update(dt, input, terrain) {
@@ -229,7 +254,7 @@ export class Player {
       let mult = 0;
       switch (this.state) {
         case 'WALK': mult = fatigued ? FATIGUE_SPEED : 1; break;
-        case 'RUN': mult = RUN_MULT; break;
+        case 'RUN': mult = RUN_MULT * (this.hasInjury('limp') ? 0.75 : 1); break;
         case 'EXHAUSTED': mult = 0.45; break;
         case 'JUMP': mult = Math.abs(this.vx) / BASE_SPEED; break;
       }
@@ -284,6 +309,7 @@ export class Player {
           this.staggerTimer = STAGGER_TIME * Math.min(2, drop / SAFE_FALL);
           this.stamina -= FALL_STAM_COST * Math.min(2, drop / SAFE_FALL);
           this.state = 'STAGGER';
+          if (drop > SAFE_FALL * 1.6 && Math.random() < 0.6) this.addInjury('limp'); // §12
         }
         this.vy = 0;
       }
@@ -305,7 +331,9 @@ export class Player {
       this.stamina -= RUN_DRAIN * dt;
       this.endurance = clamp(this.endurance - ENDURANCE_DRAIN * dt, 0, ENDURANCE_MAX);
     } else if (this.state === 'WALK' || this.state === 'IDLE') {
-      this.stamina += STAMINA_REGEN * dt;
+      let regen = STAMINA_REGEN * this._rig.regenMult;      // age curve (§5)
+      if (this.hasInjury('bruise')) regen *= 0.6;           // §12
+      this.stamina += regen * dt;
       if (this.state === 'IDLE') {
         this.endurance = clamp(this.endurance + ENDURANCE_REGEN * dt, 0, ENDURANCE_MAX);
       }
@@ -324,7 +352,22 @@ export class Player {
       this.health = Math.min(this.maxHealth, this.health + 0.6 * dt);
     }
     if (this.maxMana > 0 && this.mana < this.maxMana) {
-      this.mana = Math.min(this.maxMana, this.mana + (this.classDef?.manaRegen ?? 0) * dt);
+      this.mana = Math.min(this.maxMana,
+        this.mana + (this.classDef?.manaRegen ?? 0) * this._rig.manaRegenMult * dt);
+    }
+    // age rig refresh + stage transitions (§5)
+    this._rig = rigParams(this.ageDays);
+    if (this._rig.stage !== this._lastStage) {
+      this._lastStage = this._rig.stage;
+      bus.emit('ageStageChanged', { stage: this._rig.stage });
+    }
+    // injuries heal with time — recoverable, never permanent (§12)
+    for (let i = this.injuries.length - 1; i >= 0; i--) {
+      this.injuries[i].t -= dt;
+      if (this.injuries[i].t <= 0) {
+        bus.emit('injuryHealed', { kind: this.injuries[i].kind });
+        this.injuries.splice(i, 1);
+      }
     }
 
     const animSpeed = this.state === 'CLIMB' ? 0.8 : 1 + Math.abs(this.vx) / BASE_SPEED * 0.5;
@@ -352,11 +395,16 @@ export class Player {
         ? this.facing * speedFrac * 0.22 - this.slopeAngle * 0.25
         : this.facing * 0.1;
     }
-    const hipY = y - 22 + bob * 0.4;
+    const rig = this._rig;
+    const hipY = y - 22 * rig.heightScale + bob * 0.4;
 
     ctx.save();
-    ctx.translate(x, hipY);
-    ctx.rotate(lean);
+    // §F.1: height scales upward from the ground-contact point only
+    ctx.translate(x, y);
+    ctx.scale(rig.heightScale, rig.heightScale);
+    ctx.translate(-x, -y);
+    ctx.translate(x, y - 22 + bob * 0.4 / rig.heightScale);
+    ctx.rotate(lean + rig.stoop * this.facing);
 
     // shadow
     ctx.save();
@@ -404,14 +452,28 @@ export class Player {
       ctx.lineTo(Math.sin(a) * (9 + reach * 4) * this.facing, -13 + Math.cos(a) * 14);
       ctx.stroke();
     }
-    // head
-    ctx.fillStyle = '#e8c49a';
+    // head — ratio evens out with age (§F.1)
+    const hr = 7 * rig.headRel;
+    const headX = this.facing * 1.5 + rig.stoop * this.facing * 8;
+    const headY = -24 - bob * 0.3;
+    ctx.fillStyle = this.hurtFlash > 0 ? '#f5f5f5' : '#e8c49a';
     ctx.beginPath();
-    ctx.arc(this.facing * 1.5, -24 - bob * 0.3, 7, 0, Math.PI * 2);
+    ctx.arc(headX, headY, hr, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#6b4a2f';
+    // facial hair — its own layer, greys with age (§F.2)
+    if (rig.beardAlpha > 0.02) {
+      ctx.globalAlpha = rig.beardAlpha;
+      ctx.fillStyle = rig.beardColor;
+      ctx.beginPath();
+      ctx.arc(headX + this.facing * 0.5, headY + hr * 0.28,
+        hr * (0.68 + rig.beardLen * 0.42), Math.PI * 0.12, Math.PI * 0.88);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    // hair — greys alongside the beard (§5/§F.2)
+    ctx.fillStyle = rig.hairColor;
     ctx.beginPath();
-    ctx.arc(this.facing * 0.5, -26 - bob * 0.3, 6.5, Math.PI * 0.9, Math.PI * 2.1);
+    ctx.arc(headX - this.facing, headY - 2, hr * 0.93, Math.PI * 0.9, Math.PI * 2.1);
     ctx.fill();
 
     // fighter swipe arc — brief, readable, not flashy

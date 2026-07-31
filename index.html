@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Eastward — Phase 1</title>
+<link rel="stylesheet" href="styles/styles.css">
+<link rel="stylesheet" href="styles/hud.css">
+</head>
+<body>
+  <div id="game-root">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Ground-anchored HUD strip (DOM overlay, per spec: no floating panels) -->
+    <div id="hud">
+      <div id="hud-portrait" title="Condition">
+        <svg viewBox="0 0 24 40" id="portrait-svg" aria-hidden="true">
+          <circle cx="12" cy="7" r="5" class="p-part" id="p-head"/>
+          <rect x="7.5" y="13" width="9" height="14" rx="3" class="p-part" id="p-torso"/>
+          <rect x="4"  y="14" width="3" height="11" rx="1.5" class="p-part" id="p-arm-l"/>
+          <rect x="17" y="14" width="3" height="11" rx="1.5" class="p-part" id="p-arm-r"/>
+          <rect x="8"  y="27" width="3.4" height="11" rx="1.6" class="p-part" id="p-leg-l"/>
+          <rect x="12.6" y="27" width="3.4" height="11" rx="1.6" class="p-part" id="p-leg-r"/>
+        </svg>
+      </div>
+      <div id="hud-bars">
+        <div class="bar-row">
+          <span class="bar-label">STAMINA</span>
+          <div class="bar"><div class="bar-fill stamina" id="bar-stamina"></div><div class="bar-cap" id="bar-stamina-cap"></div></div>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">ENDURANCE</span>
+          <div class="bar"><div class="bar-fill endurance" id="bar-endurance"></div></div>
+        </div>
+      </div>
+      <div id="hud-state" title="Locomotion state">IDLE</div>
+    </div>
+
+    <div id="controls-hint">
+      ← → walk · hold to run · ↓ while running to sprint · ↑ jump (hold = higher)
+    </div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

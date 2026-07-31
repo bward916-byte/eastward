@@ -1,0 +1,24 @@
+{
+  "id": "meadow",
+  "name": "Sunfall Meadow",
+  "palette": {
+    "skyTop": "#7db8e8",
+    "skyBottom": "#f4e3b2",
+    "sun": "#fff3c4",
+    "l2Base": "#9db97a",
+    "l2Accent": "#b8cf90",
+    "l3Base": "#6f9455",
+    "l3Accent": "#8aad6b",
+    "l4Base": "#4f7a3e",
+    "l4Accent": "#6f9d52",
+    "l5Base": "#3b6330",
+    "l5Accent": "#568c3f",
+    "groundTop": "#5d8a43",
+    "groundDeep": "#4a6b38",
+    "dirt": "#8a6f4d",
+    "fogTint": "rgba(244, 227, 178, 0.12)"
+  },
+  "layerScroll": { "l2": 0.05, "l3": 0.15, "l4": 0.35, "l5": 0.8 },
+  "groundY": 520,
+  "grassDensity": 0.12
+}

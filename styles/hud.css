@@ -1,0 +1,100 @@
+/* Ground-anchored HUD strip — sits along the bottom edge, never floats mid-screen. */
+
+#hud {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 10px 16px 12px;
+  background: linear-gradient(to top, rgba(12, 16, 10, 0.82), rgba(12, 16, 10, 0));
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Status portrait — body-outline icon, color reads condition at a glance */
+#hud-portrait {
+  width: 42px;
+  height: 64px;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
+}
+#portrait-svg { width: 100%; height: 100%; }
+.p-part {
+  fill: var(--condition-color, #7ec96a);
+  stroke: rgba(20, 28, 16, 0.85);
+  stroke-width: 1;
+  transition: fill 0.4s ease;
+}
+
+/* Stat bars */
+#hud-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: min(300px, 40vw);
+}
+.bar-row { display: flex; align-items: center; gap: 8px; }
+.bar-label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: rgba(235, 240, 225, 0.75);
+  width: 68px;
+  text-align: right;
+}
+.bar {
+  position: relative;
+  flex: 1;
+  height: 9px;
+  border-radius: 5px;
+  background: rgba(10, 14, 8, 0.65);
+  border: 1px solid rgba(220, 230, 200, 0.25);
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.08s linear;
+}
+.bar-fill.stamina   { background: linear-gradient(to bottom, #ffd764, #e0a734); }
+.bar-fill.endurance { background: linear-gradient(to bottom, #6fd0a8, #3f9a76); }
+
+/* Darkened region past the current endurance ceiling on the stamina bar */
+.bar-cap {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+  width: 0%;
+}
+
+/* Locomotion state readout */
+#hud-state {
+  margin-left: auto;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: rgba(235, 240, 225, 0.8);
+  padding: 4px 10px;
+  border: 1px solid rgba(220, 230, 200, 0.25);
+  border-radius: 4px;
+  background: rgba(10, 14, 8, 0.5);
+  min-width: 84px;
+  text-align: center;
+}
+#hud-state.exhausted { color: #ff8f6b; border-color: rgba(255, 143, 107, 0.5); }
+
+#controls-hint {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: rgba(240, 244, 232, 0.8);
+  background: rgba(12, 16, 10, 0.45);
+  padding: 5px 14px;
+  border-radius: 14px;
+  pointer-events: none;
+  user-select: none;
+}

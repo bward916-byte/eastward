@@ -9,7 +9,7 @@ const IDLE = { ...RUN, moveDir: 0 };
 
 const STOPS = [
   {
-    caption: 'EASTWARD — one life, walked always east. Walk · Run · Jump.',
+    caption: 'EASTWARD — the feature tour. (You return to your last checkpoint after.) Walk · Run · Jump.',
     biome: 'meadow', x: 300, duration: 11,
     script: (t) => (Math.floor(t * 1.1) % 4 === 3 && (t % 1) < 0.05)
       ? { ...RUN, jumpPressed: true, jumpHeld: true } : RUN,
@@ -131,10 +131,8 @@ export class DemoMode {
   }
 
   async start() {
-    const c = await this.d.dialogue.ask(
-      ['Run the feature tour? Afterwards you return to your last checkpoint.'],
-      ['Begin the tour', 'Not now']);
-    if (c !== 0) return;
+    if (this.active) return;
+    this.d.log?.('demo start');
     this.d.saveManager.suspended = true;
     this.active = true;
     this.uiEl.hidden = false;
@@ -148,9 +146,15 @@ export class DemoMode {
     if (this.stopIdx >= STOPS.length) { await this.exit(); return; }
     const s = STOPS[this.stopIdx];
     this._loading = true;
+    this._loadStarted = performance.now();
     this.captionEl.classList.remove('visible');
-    await this.d.transitionTo(s.biome, s.x);
-    s.setup?.(this.d);
+    this.d.log?.(`demo stop ${this.stopIdx} → ${s.biome}@${s.x}`);
+    try {
+      await this.d.transitionTo(s.biome, s.x);
+      s.setup?.(this.d);
+    } catch (err) {
+      this.d.log?.(`demo load ERR ${err?.message}`);
+    }
     this.captionEl.textContent = s.caption;
     this.captionEl.classList.add('visible');
     [...this.dotsEl.children].forEach((el, i) => el.classList.toggle('on', i <= this.stopIdx));
@@ -159,8 +163,21 @@ export class DemoMode {
   }
 
   update(dt) {
-    if (!this.active || this._loading) return;
+    if (!this.active) return;
+    if (this._loading) {
+      // watchdog: a wedged transition can't stall the tour forever
+      if (performance.now() - this._loadStarted > 8000) {
+        this.d.log?.('demo load watchdog fired');
+        this._loading = false;
+        this.t = 0;
+      }
+      return;
+    }
     this.t += dt;
+    if ((this._dbgAcc = (this._dbgAcc ?? 0) + dt) > 1) {
+      this._dbgAcc = 0;
+      this.d.log?.(`demo tick stop=${this.stopIdx} t=${this.t.toFixed(1)} move=${this.scriptInput.moveDir} px=${this.d.player.x.toFixed(0)}`);
+    }
     const s = STOPS[this.stopIdx];
     s.tick?.(this.d, this.t, dt);
     const inp = s.script(this.t, this.d.player);

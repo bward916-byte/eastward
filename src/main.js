@@ -113,7 +113,7 @@ async function boot() {
   }
 
   async function transitionTo(id, spawnX) {
-    if (transitioning) return;
+    while (transitioning) await new Promise(r => setTimeout(r, 60));
     transitioning = true;
     const fadeOut = setInterval(() => { sceneFade = Math.min(1, sceneFade + 0.07); }, 30);
     await new Promise(r => setTimeout(r, 480));
@@ -393,6 +393,7 @@ async function boot() {
   // --- Demo tour (hideable via SHOW_DEMO) ---
   const demo = new DemoMode({
     player, classes, weather, dayNight, dialogue, saveManager,
+    log: dbg,
     transitionTo,
     restoreLastCheckpoint: async () => {
       const s = saveManager.load();
@@ -403,7 +404,7 @@ async function boot() {
   const demoBtn = document.getElementById('demo-btn');
   demoBtn.hidden = !SHOW_DEMO;
   bindTap(demoBtn, () => {
-    if (!demo.active && !dialogue.blocking) demo.start();
+    if (!demo.active) demo.start();   // starts immediately — no consent step
   });
 
   // --- Portable save codes (Amendment 07 §S) ---

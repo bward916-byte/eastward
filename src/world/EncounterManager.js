@@ -428,8 +428,8 @@ export class EncounterManager {
       return;
     }
     ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(-0.12 - t * 1.15);      // pushes up and over as progress builds
+    ctx.translate(x + t * 30, y);      // shoved eastward as progress builds
+    ctx.rotate(0.12 + t * 1.2);        // and tips AWAY from the pusher
     ctx.fillStyle = '#4d3b26';
     ctx.strokeStyle = '#33271a';
     ctx.lineWidth = 2;

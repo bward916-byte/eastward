@@ -45,12 +45,36 @@
         380
       ],
       [
-        2800,
-        350
+        2600,
+        390
       ],
       [
-        3400,
-        340
+        2950,
+        255
+      ],
+      [
+        3250,
+        265
+      ],
+      [
+        3600,
+        335
+      ],
+      [
+        4100,
+        320
+      ],
+      [
+        4500,
+        300
+      ],
+      [
+        5000,
+        290
+      ],
+      [
+        5400,
+        285
       ]
     ]
   },
@@ -68,6 +92,16 @@
       },
       {
         "from": 2600,
+        "to": 3400,
+        "depth": 1
+      },
+      {
+        "from": 3400,
+        "to": 4400,
+        "depth": 2
+      },
+      {
+        "from": 4400,
         "to": 99999,
         "depth": 1
       }
@@ -112,6 +146,11 @@
       "id": "mtn-shrine",
       "x": 2700,
       "type": "shrine"
+    },
+    {
+      "id": "mtn-camp",
+      "x": 4700,
+      "type": "campfire"
     }
   ],
   "encounters": [
@@ -137,7 +176,7 @@
     {
       "id": "mtn-branch",
       "type": "branch",
-      "x": 2950,
+      "x": 5150,
       "speaker": "",
       "lines": [
         "The path splits at a weathered marker. Above: the climb, into the wind. Below: a cave mouth, dark and still."
@@ -162,6 +201,19 @@
       "id": "mtn-relic",
       "type": "interest",
       "x": 900
+    },
+    {
+      "id": "mtn-relic-2",
+      "type": "interest",
+      "x": 3450
+    },
+    {
+      "id": "mtn-bats",
+      "type": "creature",
+      "kind": "bat",
+      "count": 2,
+      "x": 3900,
+      "blocking": false
     }
   ],
   "props": [
@@ -171,5 +223,6 @@
   "wildlife": [
     "bird",
     "rabbit"
-  ]
+  ],
+  "propDensity": 0.42
 }

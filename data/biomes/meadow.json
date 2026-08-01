@@ -89,12 +89,52 @@
         520
       ],
       [
-        9000,
+        8600,
         515
       ],
       [
-        12000,
-        518
+        9400,
+        520
+      ],
+      [
+        10200,
+        510
+      ],
+      [
+        10650,
+        330
+      ],
+      [
+        10950,
+        345
+      ],
+      [
+        11250,
+        470
+      ],
+      [
+        11700,
+        480
+      ],
+      [
+        11950,
+        700
+      ],
+      [
+        12150,
+        705
+      ],
+      [
+        12350,
+        485
+      ],
+      [
+        12800,
+        500
+      ],
+      [
+        13400,
+        505
       ]
     ]
   },
@@ -112,6 +152,11 @@
     {
       "id": "meadow-camp",
       "x": 3800,
+      "type": "campfire"
+    },
+    {
+      "id": "meadow-far-camp",
+      "x": 11350,
       "type": "campfire"
     }
   ],
@@ -225,6 +270,33 @@
       "kind": "wolf",
       "count": 2,
       "x": 9250
+    },
+    {
+      "id": "mdw-relic-4",
+      "type": "interest",
+      "x": 9900
+    },
+    {
+      "id": "mdw-log-2",
+      "type": "challenge",
+      "kind": "push",
+      "x": 11300
+    },
+    {
+      "id": "mdw-boar",
+      "type": "creature",
+      "kind": "boar",
+      "count": 1,
+      "x": 11600
+    },
+    {
+      "id": "mdw-relic-pit",
+      "type": "interest",
+      "x": 12450,
+      "reward": {
+        "artifacts": 1,
+        "gold": 10
+      }
     }
   ],
   "town": {
@@ -257,7 +329,7 @@
   },
   "exitEast": {
     "to": "forest",
-    "x": 9600
+    "x": 12900
   },
   "props": [
     "rock",
@@ -267,5 +339,6 @@
   "wildlife": [
     "bird",
     "rabbit"
-  ]
+  ],
+  "propDensity": 0.5
 }

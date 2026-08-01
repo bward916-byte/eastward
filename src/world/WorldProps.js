@@ -8,11 +8,12 @@ function hash(n) {
   return x - Math.floor(x);
 }
 
-const STEP = 150;
+const STEP = 120;
 
 export class WorldProps {
   constructor(biome, terrain) {
     this.kinds = biome.props ?? [];
+    this.density = biome.propDensity ?? 0.42;
     this.terrain = terrain;
     this.palette = biome.palette;
   }
@@ -22,7 +23,7 @@ export class WorldProps {
     const left = camera.worldLeft() - 80, right = camera.worldRight() + 80;
     for (let x = Math.floor(left / STEP) * STEP; x < right; x += STEP) {
       const r = hash(x);
-      if (r > 0.62) continue;
+      if (r > this.density) continue;
       const kind = this.kinds[Math.floor(hash(x + 7) * this.kinds.length)];
       const px = x + (hash(x + 3) - 0.5) * STEP * 0.7;
       const py = this.terrain.groundYAt(px);

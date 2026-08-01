@@ -54,7 +54,31 @@
         350
       ],
       [
-        3400,
+        3300,
+        345
+      ],
+      [
+        3650,
+        460
+      ],
+      [
+        3950,
+        470
+      ],
+      [
+        4250,
+        350
+      ],
+      [
+        4700,
+        355
+      ],
+      [
+        5200,
+        345
+      ],
+      [
+        5600,
         340
       ]
     ]
@@ -86,6 +110,11 @@
     {
       "id": "cave-camp",
       "x": 2100,
+      "type": "campfire"
+    },
+    {
+      "id": "cave-deep",
+      "x": 4600,
       "type": "campfire"
     }
   ],
@@ -127,14 +156,34 @@
       "id": "cave-relic-3",
       "type": "interest",
       "x": 1500
+    },
+    {
+      "id": "cave-boulder-2",
+      "type": "challenge",
+      "kind": "boulder",
+      "x": 4050
+    },
+    {
+      "id": "cave-bats-2",
+      "type": "creature",
+      "kind": "bat",
+      "count": 3,
+      "x": 4300,
+      "blocking": false
+    },
+    {
+      "id": "cave-relic-4",
+      "type": "interest",
+      "x": 4900
     }
   ],
   "exitEast": {
     "to": "mountain-east",
-    "x": 3300
+    "x": 5400
   },
   "props": [
     "crystal",
     "rock"
-  ]
+  ],
+  "propDensity": 0.45
 }

@@ -45,7 +45,27 @@
         510
       ],
       [
-        2600,
+        2400,
+        505
+      ],
+      [
+        2700,
+        600
+      ],
+      [
+        3000,
+        610
+      ],
+      [
+        3300,
+        500
+      ],
+      [
+        3900,
+        515
+      ],
+      [
+        4500,
         520
       ]
     ]
@@ -93,6 +113,11 @@
       "id": "east-shrine",
       "x": 400,
       "type": "shrine"
+    },
+    {
+      "id": "east-camp",
+      "x": 3150,
+      "type": "campfire"
     }
   ],
   "encounters": [
@@ -118,9 +143,21 @@
       "id": "east-relic",
       "type": "interest",
       "x": 1800
+    },
+    {
+      "id": "east-relic-2",
+      "type": "interest",
+      "x": 2850
+    },
+    {
+      "id": "east-wolves",
+      "type": "creature",
+      "kind": "wolf",
+      "count": 2,
+      "x": 3450
     }
   ],
-  "endX": 2300,
+  "endX": 4200,
   "props": [
     "flowers",
     "rock",
@@ -129,5 +166,6 @@
   "wildlife": [
     "bird",
     "rabbit"
-  ]
+  ],
+  "propDensity": 0.5
 }

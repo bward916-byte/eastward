@@ -96,7 +96,47 @@
         525
       ],
       [
-        7600,
+        7300,
+        520
+      ],
+      [
+        7550,
+        640
+      ],
+      [
+        7850,
+        650
+      ],
+      [
+        8150,
+        525
+      ],
+      [
+        8700,
+        515
+      ],
+      [
+        9100,
+        520
+      ],
+      [
+        9350,
+        395
+      ],
+      [
+        9650,
+        385
+      ],
+      [
+        9950,
+        505
+      ],
+      [
+        10450,
+        515
+      ],
+      [
+        11000,
         520
       ]
     ]
@@ -145,6 +185,11 @@
     {
       "id": "forest-camp",
       "x": 5900,
+      "type": "campfire"
+    },
+    {
+      "id": "forest-deep",
+      "x": 8850,
       "type": "campfire"
     }
   ],
@@ -217,11 +262,37 @@
       "kind": "boar",
       "count": 1,
       "x": 5450
+    },
+    {
+      "id": "fst-log-2",
+      "type": "challenge",
+      "kind": "push",
+      "x": 7700
+    },
+    {
+      "id": "fst-boars-2",
+      "type": "creature",
+      "kind": "boar",
+      "count": 2,
+      "x": 8350
+    },
+    {
+      "id": "fst-relic-ridge",
+      "type": "interest",
+      "x": 9500
+    },
+    {
+      "id": "fst-bats-2",
+      "type": "creature",
+      "kind": "bat",
+      "count": 2,
+      "x": 9800,
+      "blocking": false
     }
   ],
   "exitEast": {
     "to": "mountain",
-    "x": 7200
+    "x": 10500
   },
   "props": [
     "stump",
@@ -231,5 +302,6 @@
   "wildlife": [
     "bird",
     "rabbit"
-  ]
+  ],
+  "propDensity": 0.55
 }

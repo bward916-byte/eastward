@@ -214,27 +214,50 @@ async function boot() {
     scene.party.forEach((c, i) => { c.slot = i; });
   });
 
+  /**
+   * Rebuild the whole world from a snapshot — used by the boot resume, by
+   * respawn after defeat, and by the demo tour handing control back.
+   *
+   * Ordering is load-bearing:
+   *  1. saves suspended for the WHOLE operation. A tick landing mid-restore
+   *     once checkpoint-saved half-applied state (the "age persists after
+   *     refresh" bug), so un-suspending happens only at the very end.
+   *  2. journal.restore BEFORE loadScene — encounter gating and the party
+   *     roster both resolve inside the EncounterManager/scene constructors.
+   */
+  async function restoreFromSnapshot(snap) {
+    if (!snap) return false;
+    const wasSuspended = saveManager.suspended;
+    saveManager.suspended = true;
+    try {
+      journal.restore(snap.world?.journal);
+      await loadScene(snap.biome ?? 'meadow', snap.player?.x ?? 60);
+      saveManager.applyTo(player, snap);
+      if (snap.player?.classId) {
+        player.applyClass(snap.player.classId, classes[snap.player.classId]);
+      }
+      if (snap.world?.timeOfDay != null) dayNight.phase = snap.world.timeOfDay;
+      scene.encounters.applyFlags(snap.world?.flags);
+      player.y = scene.terrain.groundYAt(player.x);
+      player.prevX = player.x; player.prevY = player.y;
+      player.vx = 0;
+      for (const cp of scene.checkpoints) {
+        if (cp.x <= player.x + 1) cp.reached = true;
+        cp.glow = 0;
+      }
+      // party members are rebuilt by loadScene from the journal; put them on
+      // the ground beside the player rather than wherever the last scene left
+      for (const c of scene.party) c.placeNear(player);
+      return true;
+    } finally {
+      saveManager.suspended = wasSuspended;
+    }
+  }
+
   // Resume at last checkpoint, or begin the intro (§2) on a fresh journey
   const snap = saveManager.load();
-  if (snap) {
-    // MUST precede loadScene: encounter gating resolves at construction time
-    journal.restore(snap.world?.journal);
-    await loadScene(snap.biome ?? 'meadow', snap.player.x);
-    saveManager.applyTo(player, snap);
-    if (snap.player.classId) {
-      player.applyClass(snap.player.classId, classes[snap.player.classId]);
-    }
-    if (snap.world?.timeOfDay != null) dayNight.phase = snap.world.timeOfDay;
-    scene.encounters.applyFlags(snap.world?.flags);
-    player.y = scene.terrain.groundYAt(player.x);
-    player.prevX = player.x; player.prevY = player.y;
-    for (const cp of scene.checkpoints) {
-      if (cp.x <= player.x + 1) cp.reached = true;
-      cp.glow = 0;
-    }
-  } else {
-    await loadScene('intro', 60);
-  }
+  if (snap) await restoreFromSnapshot(snap);
+  else await loadScene('intro', 60);
 
   bus.on('gameSaved', () => hud.flashSaved());
   bus.on('creatureSlain', () => { player.gold += 5; });   // pelts, abstracted (§10)

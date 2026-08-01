@@ -2,7 +2,7 @@
 
 **Live:** https://bward916-byte.github.io/eastward/
 **Repo:** https://github.com/bward916-byte/eastward
-**Stack:** Vanilla JS (ES6 modules), Canvas 2D, Web Audio, DOM HUD. Zero dependencies, zero build step. Deploy = `git push` to `main` (GitHub Pages serves the repo root). Requires a static server locally (`python -m http.server`) because of module imports and JSON fetches.
+**Stack:** Vanilla JS (ES6 modules), Canvas 2D, Web Audio, DOM HUD. Zero runtime dependencies, zero build step (jsdom is a devDependency for the smoke test only). Deploy = `git push` to `main` (GitHub Pages serves the repo root). Requires a static server locally (`python -m http.server`) because of module imports and JSON fetches.
 
 A 2D side-scrolling journey game: one life, walked always east, searching for a lost family. The player ages continuously from Child to Elder over real play time. Built against a design spec plus Amendments 01–03 and 06–07 (§ references throughout the code point at those documents).
 
@@ -165,17 +165,19 @@ Desktop: ←→ walk (hold→run), ↑ jump (hold=higher; hold ↑+dir at a 45�
 - `?debug` — on-screen event log (button taps, interact ticks, demo telemetry per second).
 - `?new` — fresh journey.
 - Deploy: commit to `main`, Pages builds in ~30–60s. Check `GET /repos/bward916-byte/eastward/pages/builds/latest`. **The PAT used during development sits in chat history — revoke it and mint fresh ones as needed (repo scope).**
-- Headless testing pattern (used throughout): `node --input-type=module` importing real modules with stubbed `performance/localStorage/location`, driving `Player`/`EncounterManager`/etc. with scripted inputs and asserting outcomes. Async dialogue flows need `await setImmediate` yields inside sim loops.
+- **`npm install && npm run smoke`** — boots the REAL game headlessly under jsdom (stubbed canvas + Web Audio, `fetch` serving `data/` from disk) and drives the rare transitions: resume from save, respawn after defeat, demo start/exit. Exits non-zero on failure, so it can gate a deploy. **Add a case whenever you add a transition.**
+- Module-level headless pattern (for systems work): `node --input-type=module` importing real modules with stubbed `performance/localStorage/location`, driving `Player`/`EncounterManager`/`Companion` with scripted inputs and asserting outcomes. Async dialogue flows need `await setImmediate` yields inside sim loops. This is how the horde balance numbers and the companion tracking fixes were measured.
 
 ## Lessons / Gotchas (read before editing)
 
-1. **Verify every automated text edit.** Python `str.replace` no-ops silently on needle mismatch; this shipped a build where attack/interact input was structurally dead for days (`InputManager` set edges nobody consumed). **Grep the file after patching, and prefer targeted `str_replace`-style edits with unique anchors.**
-2. Mobile event order: pointerdown fires before touchstart — anything a pointerdown closes must keep blocking the paired touchstart (`dialogue.blocking` grace).
-3. Never toggle `hidden`/`display` on tappable elements per frame (iOS tap drop). Use the `setVisible` class approach.
-4. Restores must run with saves suspended and complete BEFORE un-suspending — mid-restore ticks once checkpoint-saved aged demo state (the "age persists after refresh" bug).
-5. Landing must trigger on surface contact regardless of vertical velocity, or jumps into rising slopes sink-and-bounce.
-6. Anchor full-screen gradients to stable values (biome baseY), not per-frame sampled ones (the ravine flicker).
-7. The generative audio graph must be built once per biome with layers at gain 0 and toggled by ramp — never rebuild voices on state change.
+1. **The happy path is not the risk; the rare transitions are.** `restoreFromSnapshot` was CALLED in three places and DEFINED in none — respawn-after-defeat and demo-exit both threw `ReferenceError` in shipped builds, for months, because neither is on the path you walk while testing a change. `npm run smoke` exists to cover exactly this. It is also why balance was measured rather than eyeballed: companions animated and swung convincingly while landing zero blows.
+2. **Verify every automated text edit.** Python `str.replace` no-ops silently on needle mismatch; this shipped a build where attack/interact input was structurally dead for days (`InputManager` set edges nobody consumed). **Grep the file after patching, and prefer targeted `str_replace`-style edits with unique anchors.**
+3. Mobile event order: pointerdown fires before touchstart — anything a pointerdown closes must keep blocking the paired touchstart (`dialogue.blocking` grace).
+4. Never toggle `hidden`/`display` on tappable elements per frame (iOS tap drop). Use the `setVisible` class approach.
+5. Restores must run with saves suspended and complete BEFORE un-suspending — mid-restore ticks once checkpoint-saved aged demo state (the "age persists after refresh" bug).
+6. Landing must trigger on surface contact regardless of vertical velocity, or jumps into rising slopes sink-and-bounce.
+7. Anchor full-screen gradients to stable values (biome baseY), not per-frame sampled ones (the ravine flicker).
+8. The generative audio graph must be built once per biome with layers at gain 0 and toggled by ramp — never rebuild voices on state change.
 
 ## Roadmap (spec items not yet built)
 

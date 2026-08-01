@@ -216,6 +216,33 @@
       "x": 2450
     },
     {
+      "id": "mdw-hungry-boy",
+      "type": "adventure",
+      "x": 3000,
+      "speaker": "Thin Boy",
+      "lines": [
+        "Have you food? Any at all.",
+        "Ma went east for work in the spring. She hasn't come back for me."
+      ],
+      "choices": [
+        "Share what you carry",
+        "You'll manage. So will I."
+      ],
+      "responses": [
+        "He eats without looking up. When he finishes he presses a chipped copper into your hand — his whole fortune, and he will not take it back.",
+        "He nods like he expected it. That is the part that stays with you."
+      ],
+      "outcomes": [
+        {
+          "gold": -8,
+          "mark": {
+            "kindness": 1
+          }
+        },
+        {}
+      ]
+    },
+    {
       "id": "mdw-fallen-tree",
       "type": "challenge",
       "kind": "push",
@@ -227,11 +254,9 @@
       "x": 5250
     },
     {
-      "id": "mdw-wolves",
-      "type": "creature",
-      "kind": "wolf",
-      "count": 2,
-      "x": 8700
+      "id": "mdw-relic-3",
+      "type": "interest",
+      "x": 5650
     },
     {
       "id": "mdw-rite",
@@ -260,21 +285,64 @@
       ]
     },
     {
-      "id": "mdw-relic-3",
-      "type": "interest",
-      "x": 5650
+      "id": "mdw-mira",
+      "type": "adventure",
+      "x": 8200,
+      "speaker": "Mira",
+      "lines": [
+        "You walk like someone chasing, not wandering.",
+        "I'm looking for my brother. Two winters now. Every road east, every wayside stone.",
+        "The roads are worse than they were. Things run in packs now that used to run alone. Two of us stand a better chance than one of us."
+      ],
+      "choices": [
+        "Walk with me",
+        "I go faster alone"
+      ],
+      "responses": [
+        "She falls in a half-step behind and to your left, where she can see the road and you both.",
+        "She doesn't argue. She only says: you'll want someone at your back before the pass. Then she is gone."
+      ],
+      "outcomes": [
+        {
+          "companion": "mira",
+          "mark": {
+            "mira_offer": "taken"
+          }
+        },
+        {
+          "mark": {
+            "mira_offer": "refused"
+          }
+        }
+      ]
     },
     {
-      "id": "mdw-wolves-2",
+      "id": "mdw-wolves",
       "type": "creature",
       "kind": "wolf",
       "count": 2,
-      "x": 9250
+      "x": 8700
     },
     {
       "id": "mdw-relic-4",
       "type": "interest",
       "x": 9900
+    },
+    {
+      "id": "mdw-horde",
+      "type": "horde",
+      "x": 10400,
+      "waves": [
+        {
+          "kind": "wolf",
+          "count": 3
+        },
+        {
+          "kind": "wolf",
+          "count": 3,
+          "delay": 2.0
+        }
+      ]
     },
     {
       "id": "mdw-log-2",
@@ -283,11 +351,31 @@
       "x": 11300
     },
     {
-      "id": "mdw-boar",
-      "type": "creature",
-      "kind": "boar",
-      "count": 1,
-      "x": 11600
+      "id": "mdw-mira-after",
+      "type": "adventure",
+      "x": 11900,
+      "speaker": "Mira",
+      "requires": [
+        "+mira"
+      ],
+      "lines": [
+        "Six of them, together, hunting the road itself.",
+        "That's not how wolves behave. Something east of here has pushed them out of their own country.",
+        "Whatever it is, we're walking toward it."
+      ],
+      "choices": [
+        "Then we'd better find more hands"
+      ],
+      "responses": [
+        "She almost smiles. That's the first sensible thing you've said."
+      ],
+      "outcomes": [
+        {
+          "mark": {
+            "knows_hordes": 1
+          }
+        }
+      ]
     },
     {
       "id": "mdw-relic-pit",
@@ -297,117 +385,6 @@
         "artifacts": 1,
         "gold": 10
       }
-    },
-    {
-      "id": "mdw-hungry-boy",
-      "type": "adventure",
-      "x": 3000,
-      "speaker": "Thin Boy",
-      "lines": [
-        "Have you food? Any at all.",
-        "Ma went east for work in the spring. She hasn't come back for me."
-      ],
-      "choices": [
-        "Share what you carry",
-        "You'll manage. So will I.",
-        "Come to the village with me"
-      ],
-      "responses": [
-        "He eats without looking up. When he finishes he presses a chipped copper into your hand — his whole fortune, and he will not take it back.",
-        "He nods like he expected it. That is the part that stays with you.",
-        "He shakes his head. Not without her. She'll come back to this road, he says, and I'll be on it."
-      ],
-      "outcomes": [
-        {
-          "gold": -8,
-          "mark": {
-            "kindness": 1
-          }
-        },
-        {
-          "mark": {
-            "kindness": 0
-          }
-        },
-        {
-          "mark": {
-            "kindness": 1
-          }
-        }
-      ]
-    },
-    {
-      "id": "mdw-mira",
-      "type": "adventure",
-      "x": 8200,
-      "speaker": "Mira",
-      "lines": [
-        "You walk like someone chasing, not wandering.",
-        "I'm looking for my brother. Two winters now. Every road east, every village, every wayside stone.",
-        "Two sets of eyes catch more sign than one. And the pass is no place to be alone."
-      ],
-      "choices": [
-        "Walk with me",
-        "I go faster alone",
-        "What did your brother look like?"
-      ],
-      "responses": [
-        "She falls in a half-step behind and to your left, where she can see the road and you both.",
-        "She doesn't argue. She only says: the pass is no place to be alone. Then she is behind you, and then she is gone.",
-        "Tall, she says. A scar through one eyebrow. He'd have been asking after work, not family — he was proud that way."
-      ],
-      "outcomes": [
-        {
-          "companion": "mira",
-          "mark": {
-            "mira_offer": "taken"
-          }
-        },
-        {
-          "mark": {
-            "mira_offer": "refused"
-          }
-        },
-        {
-          "mark": {
-            "mira_offer": "asked"
-          }
-        }
-      ]
-    },
-    {
-      "id": "mdw-mira-second",
-      "type": "adventure",
-      "x": 11800,
-      "speaker": "Mira",
-      "requires": [
-        "mdw-mira=2"
-      ],
-      "lines": [
-        "You again. Still walking east.",
-        "I've thought about it. The offer stands, if you've changed your mind."
-      ],
-      "choices": [
-        "Walk with me",
-        "Still alone"
-      ],
-      "responses": [
-        "Good, she says, and shoulders her pack without ceremony.",
-        "Then luck to you. Truly."
-      ],
-      "outcomes": [
-        {
-          "companion": "mira",
-          "mark": {
-            "mira_offer": "taken"
-          }
-        },
-        {
-          "mark": {
-            "mira_offer": "refused"
-          }
-        }
-      ]
     }
   ],
   "town": {

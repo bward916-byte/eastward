@@ -8,7 +8,6 @@
 // companions, mount, worldFlags) extend it without breaking old saves.
 
 import { bus } from './EventBus.js';
-import { encodeSnapshot, decodeSnapshot, peekBiomeIndex } from './SaveCodeCodec.js';
 
 const KEY = 'eastward.save';
 const SCHEMA_VERSION = 1;
@@ -112,29 +111,6 @@ export class SaveManager {
     player.level = snap.player.level ?? 0;
     player.ageDays = snap.player.ageDays ?? 0;
     player.injuries = (snap.player.injuries ?? []).map(k => ({ kind: k, t: 90 }));
-  }
-
-  /** Amendment 07 §S: export the CURRENT local checkpoint save as a code. */
-  exportCode(biome, manifest) {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
-    try { return encodeSnapshot(JSON.parse(raw), biome, manifest); }
-    catch { return null; }
-  }
-
-  peekCodeBiome(code, manifest) {
-    const idx = peekBiomeIndex(code);
-    return idx == null ? null : manifest.biomes[idx] ?? null;
-  }
-
-  /** Decode + overwrite the rolling local slot (§S.3). Returns snapshot or null. */
-  importFromCode(code, biome, manifest) {
-    const snap = decodeSnapshot(code, biome, manifest);
-    if (!snap) return null;
-    localStorage.setItem(KEY, JSON.stringify(snap));
-    this.lastCheckpointId = snap.checkpointId;
-    this.biomeId = snap.biome;
-    return snap;
   }
 
   _migrate(snap) {

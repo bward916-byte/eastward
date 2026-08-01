@@ -122,39 +122,49 @@
   ],
   "encounters": [
     {
-      "id": "east-embers",
+      "id": "east-relic-3",
+      "type": "interest",
+      "x": 900,
+      "reward": {
+        "artifacts": 1,
+        "gold": 9
+      }
+    },
+    {
+      "id": "east-fen",
       "type": "adventure",
-      "x": 1300,
+      "x": 1500,
       "speaker": "",
       "lines": [
-        "A campfire ring beside the path. The ash is fresh — still faintly warm.",
-        "Whoever sat here left in no hurry. Heading east, down toward the green."
+        "A dog sits square in the middle of the road, facing west, waiting.",
+        "It is thin and its collar is a strip of good cloth, cut from something better. It does not beg and it does not run.",
+        "When you step past, it stands and walks at your heel as though this had all been arranged some time ago."
       ],
       "choices": [
-        "Rest a moment by the embers",
-        "Hurry after them"
+        "Let it come",
+        "Send it back"
       ],
       "responses": [
-        "The warmth lingers. For the first time in a long while, the road ahead feels close.",
-        "Down the slopes, then. They cannot be far now."
+        "It falls in tight at your left knee and stays there.",
+        "It sits back down in the road, facing west, and waits for whoever is next."
+      ],
+      "outcomes": [
+        {
+          "companion": "fen",
+          "mark": {
+            "fen": "joined"
+          }
+        },
+        {}
       ]
     },
     {
-      "id": "east-relic",
-      "type": "interest",
-      "x": 1800
-    },
-    {
-      "id": "east-relic-2",
-      "type": "interest",
-      "x": 2850
-    },
-    {
-      "id": "east-wolves",
+      "id": "east-bats",
       "type": "creature",
-      "kind": "wolf",
+      "x": 1550,
+      "kind": "bat",
       "count": 2,
-      "x": 3450
+      "blocking": false
     },
     {
       "id": "east-widow",
@@ -170,7 +180,7 @@
         "Only rest, thank you."
       ],
       "responses": [
-        "She goes still. Yes, she says. Not long ago. They left word on the stone and went down to the crossing to wait. They have been waiting a while now.",
+        "She goes still. Yes, she says. Not long ago. They left word and went down to the crossing to wait. They have been waiting a while now.",
         "Then rest. The wind here is kinder than it looks."
       ],
       "outcomes": [
@@ -183,53 +193,9 @@
       ]
     },
     {
-      "id": "east-mira-parting",
-      "type": "adventure",
-      "x": 3800,
-      "speaker": "Mira",
-      "requires": [
-        "@companion=mira"
-      ],
-      "lines": [
-        "This is where I stop.",
-        "The cairn-keeper had word of a tall man with a scar through his eyebrow. North, along the water, three weeks back. That's my road now.",
-        "You'll be at the crossing by dark. Go on — I'll not make a thing of it."
-      ],
-      "choices": [
-        "Go find him",
-        "Stay with me a while longer"
-      ],
-      "responses": [
-        "She grips your forearm the way soldiers do, and then she is walking north and not looking back.",
-        "She shakes her head, but she is smiling. Two winters I've looked for him. You'd not ask me to stop now."
-      ],
-      "outcomes": [
-        {
-          "unmark": [
-            "companion"
-          ],
-          "mark": {
-            "mira_ending": "north"
-          }
-        },
-        {
-          "unmark": [
-            "companion"
-          ],
-          "mark": {
-            "mira_ending": "north"
-          }
-        }
-      ]
-    },
-    {
-      "id": "east-relic-3",
+      "id": "east-relic",
       "type": "interest",
-      "x": 900,
-      "reward": {
-        "artifacts": 1,
-        "gold": 9
-      }
+      "x": 1800
     },
     {
       "id": "east-boar",
@@ -239,12 +205,72 @@
       "count": 1
     },
     {
-      "id": "east-bats",
-      "type": "creature",
-      "x": 1550,
-      "kind": "bat",
-      "count": 2,
-      "blocking": false
+      "id": "east-relic-2",
+      "type": "interest",
+      "x": 2850
+    },
+    {
+      "id": "east-horde",
+      "type": "horde",
+      "x": 3400,
+      "waves": [
+        {
+          "kind": "wolf",
+          "count": 5
+        },
+        {
+          "kind": "boar",
+          "count": 4,
+          "delay": 2.0
+        },
+        {
+          "kind": "bat",
+          "count": 5,
+          "delay": 2.0
+        },
+        {
+          "kind": "wolf",
+          "count": 7,
+          "delay": 2.2,
+          "overlap": true
+        },
+        {
+          "kind": "boar",
+          "count": 5,
+          "delay": 2.6,
+          "overlap": true
+        }
+      ]
+    },
+    {
+      "id": "east-thin-party",
+      "type": "adventure",
+      "x": 3900,
+      "speaker": "Woman at the Cairn",
+      "requires": [
+        "#party<3"
+      ],
+      "lines": [
+        "You came through that with what you've got? Sit down before you fall down.",
+        "Listen to me. What's massing at the rivermouth is worse than what you just walked through, and it is worse by a long way.",
+        "There's no shame in it. But go down there short-handed and the crossing is where you stop."
+      ],
+      "choices": [
+        "I'll manage",
+        "I'll take whoever will come"
+      ],
+      "responses": [
+        "She looks at you a long moment and does not say what she is thinking.",
+        "Then ask at the fires. There are people down there with nothing left to lose but the sitting still."
+      ],
+      "outcomes": [
+        {},
+        {
+          "mark": {
+            "warned": 1
+          }
+        }
+      ]
     }
   ],
   "props": [

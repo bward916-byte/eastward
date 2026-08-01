@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "biomes": [
     "intro",
     "meadow",
@@ -15,21 +15,12 @@
     "wizard",
     "fighter"
   ],
-  "journalKeys": [
-    "mdw-traveler",
-    "mdw-mira",
-    "mdw-hungry-boy",
-    "fst-wounded",
-    "fst-snare",
-    "mtn-branch",
-    "mtn-oathstone",
-    "cave-bones",
-    "high-shepherd",
-    "east-widow",
-    "east-mira-parting",
-    "riv-ferryman"
-  ],
   "companions": [
-    "mira"
+    "mira",
+    "corran",
+    "bram",
+    "sela",
+    "tolm",
+    "fen"
   ]
 }

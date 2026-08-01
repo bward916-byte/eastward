@@ -219,6 +219,14 @@
       "x": 1600
     },
     {
+      "id": "fst-bats",
+      "type": "creature",
+      "kind": "bat",
+      "count": 2,
+      "x": 2450,
+      "blocking": false
+    },
+    {
       "id": "fst-fallen-oak",
       "type": "challenge",
       "kind": "push",
@@ -237,24 +245,35 @@
       "x": 4600
     },
     {
-      "id": "fst-wolves",
-      "type": "creature",
-      "kind": "wolf",
-      "count": 3,
-      "x": 6400
-    },
-    {
-      "id": "fst-bats",
-      "type": "creature",
-      "kind": "bat",
-      "count": 2,
-      "x": 2450,
-      "blocking": false
-    },
-    {
-      "id": "fst-relic-3",
-      "type": "interest",
-      "x": 5600
+      "id": "fst-snare",
+      "type": "adventure",
+      "x": 4900,
+      "speaker": "Mira",
+      "requires": [
+        "+mira"
+      ],
+      "lines": [
+        "Stop. Wire, knee height, freshly sprung — and it wasn't set for deer.",
+        "Someone walked into this ahead of us and tore themselves free.",
+        "They were moving east. And they were bleeding."
+      ],
+      "choices": [
+        "Follow the sign",
+        "Leave it"
+      ],
+      "responses": [
+        "The trail bends off the path and ends at a torn strip of cloth. She folds it away without a word.",
+        "She looks at the wire a moment longer than you do, then follows."
+      ],
+      "outcomes": [
+        {
+          "artifacts": 1,
+          "mark": {
+            "snare_trail": 1
+          }
+        },
+        {}
+      ]
     },
     {
       "id": "fst-boar-2",
@@ -262,6 +281,52 @@
       "kind": "boar",
       "count": 1,
       "x": 5450
+    },
+    {
+      "id": "fst-relic-3",
+      "type": "interest",
+      "x": 5600
+    },
+    {
+      "id": "fst-wolves",
+      "type": "creature",
+      "kind": "wolf",
+      "count": 3,
+      "x": 6400
+    },
+    {
+      "id": "fst-wounded",
+      "type": "adventure",
+      "x": 7100,
+      "speaker": "Wounded Man",
+      "lines": [
+        "Don't — don't come closer with a blade out.",
+        "Boar caught me at the ford. Can't put weight on it and the light's going.",
+        "I'm no use to you like this. But I've carried a shield in a line before, and I'd carry one again for whoever gets me upright."
+      ],
+      "choices": [
+        "Bind the leg and stay till dawn",
+        "Leave him your water and go on"
+      ],
+      "responses": [
+        "It costs you a night and most of your strength. By morning he can stand. Corran, he says, and takes his place on your left where the shield does the most good.",
+        "He takes it with both hands. It is not enough and you both know it."
+      ],
+      "outcomes": [
+        {
+          "health": -12,
+          "companion": "corran",
+          "mark": {
+            "corran": "saved",
+            "kindness": 1
+          }
+        },
+        {
+          "mark": {
+            "corran": "water"
+          }
+        }
+      ]
     },
     {
       "id": "fst-log-2",
@@ -277,6 +342,27 @@
       "x": 8350
     },
     {
+      "id": "fst-horde",
+      "type": "horde",
+      "x": 9200,
+      "waves": [
+        {
+          "kind": "boar",
+          "count": 2
+        },
+        {
+          "kind": "wolf",
+          "count": 4,
+          "delay": 2.2
+        },
+        {
+          "kind": "boar",
+          "count": 3,
+          "delay": 2.4
+        }
+      ]
+    },
+    {
       "id": "fst-relic-ridge",
       "type": "interest",
       "x": 9500
@@ -288,76 +374,6 @@
       "count": 2,
       "x": 9800,
       "blocking": false
-    },
-    {
-      "id": "fst-wounded",
-      "type": "adventure",
-      "x": 7100,
-      "speaker": "Wounded Man",
-      "lines": [
-        "Don't — don't come closer with a blade out.",
-        "Boar caught me at the ford. I can't put weight on it and the light's going."
-      ],
-      "choices": [
-        "Bind the leg and stay till dawn",
-        "Leave him your water and go on",
-        "Go on"
-      ],
-      "responses": [
-        "It costs you a night and most of your strength. In the morning he can stand. He tells you his name is Corran and that he will not forget yours.",
-        "He takes it with both hands. It is not enough and you both know it.",
-        "You hear him call out once, behind you, and then not again."
-      ],
-      "outcomes": [
-        {
-          "health": -12,
-          "mark": {
-            "corran": "saved",
-            "kindness": 1
-          }
-        },
-        {
-          "mark": {
-            "corran": "water"
-          }
-        },
-        {
-          "mark": {
-            "corran": "left"
-          }
-        }
-      ]
-    },
-    {
-      "id": "fst-snare",
-      "type": "adventure",
-      "x": 4200,
-      "speaker": "Mira",
-      "requires": [
-        "@companion=mira"
-      ],
-      "lines": [
-        "Stop. Look — there, across the deer track.",
-        "Wire, set at knee height and freshly sprung. Someone walked into this ahead of us and got themselves free.",
-        "Whoever it was, they were moving east. And they were bleeding."
-      ],
-      "choices": [
-        "Follow the sign",
-        "Leave it"
-      ],
-      "responses": [
-        "The trail bends off the path and ends at a torn strip of cloth caught in bramble. She folds it away without a word.",
-        "She looks at the wire a moment longer than you do, then follows."
-      ],
-      "outcomes": [
-        {
-          "artifacts": 1,
-          "mark": {
-            "snare_trail": 1
-          }
-        },
-        {}
-      ]
     }
   ],
   "exitEast": {

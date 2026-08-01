@@ -64,27 +64,23 @@
         <button id="demo-exit">✕ Exit tour</button>
       </div>
     </div>
-    <button id="journey-btn" hidden aria-label="Record your journey">✎</button>
+    <button id="journey-btn" hidden aria-label="Your journey">✎</button>
     <div id="journey-panel" hidden>
-      <h3>Record your journey</h3>
-      <p class="jp-hint">Keep this code to restore your journey anywhere.</p>
-      <textarea id="journey-code" readonly rows="3"></textarea>
-      <div class="jp-row">
-        <button id="journey-copy">Copy code</button>
-      </div>
+      <h3>Those who walk with you</h3>
+      <div id="party-roster"><p class="jp-hint">You walk alone.</p></div>
       <hr>
-      <p class="jp-hint">Or enter a code to load that journey. This replaces your current progress.</p>
-      <input id="journey-input" placeholder="E1-XXXXX-XXXXX-..." autocomplete="off" spellcheck="false">
+      <h4 class="jp-sub">The road behind</h4>
+      <div id="journey-record"><p class="jp-hint">Your journey has barely begun.</p></div>
       <div class="jp-row">
-        <button id="journey-load">Load code</button>
         <button id="journey-close">Close</button>
       </div>
       <hr>
       <div class="jp-row">
         <button id="journey-reset">⟲ Start a new journey</button>
       </div>
-      <p id="journey-error" hidden>That code doesn't look right — please check it and try again.</p>
     </div>
+
+    <div id="horde-banner" class="gone"></div>
 
     <div id="dialogue-box" hidden>
       <div id="dialogue-speaker"></div>

@@ -4,8 +4,9 @@
 // stay understated so super-weapon effects (§7) read as special by contrast.
 
 export class Projectile {
-  constructor(kind, x, y, target, def, fallbackDir, willMiss = false) {
+  constructor(kind, x, y, target, def, fallbackDir, willMiss = false, owner = null) {
     this.kind = kind;              // 'knife' | 'bolt'
+    this.owner = owner;            // companion who loosed it, for aggro draw
     this.x = x; this.y = y;
     this.target = target;          // may be null → flies straight
     this.damage = def.damage;
@@ -50,7 +51,7 @@ export class Projectile {
     for (const c of creatures) {
       if (c.dead) continue;
       if (Math.hypot(c.x - this.x, c.y - 14 - this.y) < 18) {
-        c.takeDamage(this.damage, this.x);
+        c.takeDamage(this.damage, this.x, this.owner);
         this.alive = false;
         return;
       }

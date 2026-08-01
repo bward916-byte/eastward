@@ -225,18 +225,21 @@
       "type": "adventure",
       "x": 5000,
       "speaker": "Corran",
+      "requiresAny": [
+        "+corran",
+        "@corran=saved",
+        "fst-wounded=0"
+      ],
       "lines": [
-        "I know that walk. I'd know it in the dark.",
-        "I told you I'd not forget. Sit — there's stew and it's hot, which is more than this camp usually manages.",
-        "Listen. There's a family been at the low fires eleven days. Asking everyone who comes down the road after a child. I told them people do come down that road. I told them it happens."
+        "There's a family been at the low fires eleven days, asking after a child.",
+        "But nobody's crossing tonight. The whole bank knows it — there's something come down the far shore and it's been circling since dusk.",
+        "If it comes at the fires, it comes through us first."
       ],
       "choices": [
-        "Where are the low fires?",
-        "Eat first"
+        "Then we hold the fires"
       ],
       "responses": [
-        "Along the water, past the last of the tents. You'll see them from the rise.",
-        "He puts the bowl in your hands and does not let you refuse it. Eat, he says. Then go. They'll not have moved."
+        "He sets his shield down where the shingle turns to grass and does not pick it back up."
       ],
       "outcomes": [
         {
@@ -244,18 +247,7 @@
             "family_sign": "lowfires"
           },
           "health": 20
-        },
-        {
-          "mark": {
-            "family_sign": "lowfires"
-          },
-          "health": 30,
-          "gold": 15
         }
-      ],
-      "requiresAny": [
-        "@corran=saved",
-        "fst-wounded=0"
       ]
     },
     {
@@ -276,6 +268,45 @@
       "blocking": false
     },
     {
+      "id": "riv-horde",
+      "type": "horde",
+      "x": 5900,
+      "waves": [
+        {
+          "kind": "wolf",
+          "count": 5
+        },
+        {
+          "kind": "boar",
+          "count": 4,
+          "delay": 1.8
+        },
+        {
+          "kind": "bat",
+          "count": 6,
+          "delay": 1.8
+        },
+        {
+          "kind": "wolf",
+          "count": 7,
+          "delay": 2.2,
+          "overlap": true
+        },
+        {
+          "kind": "boar",
+          "count": 5,
+          "delay": 2.4,
+          "overlap": true
+        },
+        {
+          "kind": "wolf",
+          "count": 8,
+          "delay": 2.6,
+          "overlap": true
+        }
+      ]
+    },
+    {
       "id": "riv-lowfires",
       "type": "adventure",
       "x": 6600,
@@ -289,7 +320,7 @@
         "Go down"
       ],
       "responses": [
-        "The journey does not end here — but for the first time since the bridge, it is pointed at something instead of away."
+        "Whoever walked out of the meadow did not walk down to the fires. Everyone who did is standing behind you."
       ],
       "outcomes": [
         {

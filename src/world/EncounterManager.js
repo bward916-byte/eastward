@@ -21,9 +21,9 @@ export class EncounterManager {
     this.terrain = terrain;
     this.player = player;
     this.dialogue = dialogue;
-    // NOTE: this array is index-addressed by SaveCodeCodec's bit-packing, so
-    // conditional encounters are NEVER filtered out — they stay in position and
-    // are flagged `gated`, which update()/draw() skip. Keeps codes stable.
+    // Conditional encounters stay in the array flagged `gated` (rather than
+    // being filtered out) so indices remain stable for anything holding a
+    // reference, and so a gate can reopen without rebuilding the scene.
     this.encounters = (defs ?? []).map(d => ({
       ...d,
       y: terrain.groundYAt(d.x),
@@ -86,6 +86,67 @@ export class EncounterManager {
         }
         if (!e.resolved && dist > 0 && e.blocking !== false) maxX = Math.min(maxX, e.x - 42);
         e._showAttackHint = e.spawned && !e.resolved && Math.abs(dist) < 320;
+        continue;
+      }
+
+      // --- Hordes (§P): staged waves that must be cleared to pass ---------
+      // Each wave spawns only once the previous is down, so the fight has a
+      // rhythm (press, breathe, press) instead of one undifferentiated mob.
+      // Creatures spawn on BOTH sides once past wave 1 — being surrounded is
+      // the thing a party solves and a lone walker does not.
+      if (e.type === 'horde') {
+        const waves = e.waves ?? [];
+        if (!e.started && dist > 0 && dist < 520) {
+          e.started = true;
+          e.wave = -1;
+          e.pack = [];
+          e.waveGap = 0;
+          bus.emit('hordeStarted', { id: e.id, waves: waves.length });
+        }
+        if (e.started && !e.resolved) {
+          const cleared = e.pack.every(c => c.dead);
+          const next = waves[e.wave + 1];
+          // A wave normally waits for the previous to fall. Waves flagged
+          // `overlap` spawn on their timer regardless — that is what lets a
+          // late horde saturate a full party instead of being killed piecemeal
+          // as it trickles in.
+          if (e.waveGap > 0) e.waveGap -= dt;
+          const ready = next?.overlap ? e.waveGap <= 0 : (cleared && e.waveGap <= 0);
+          if (ready) {
+            e.wave++;
+            if (e.wave >= waves.length) {
+              // Every wave is out; the horde is only over once they are ALL
+              // down. `pack` accumulates rather than resetting per wave —
+              // otherwise an overlapping wave would orphan the previous one
+              // and the horde could resolve with enemies still standing.
+              if (cleared) {
+                e.resolved = true;
+                e.sparkle = 1.4;
+                bus.emit('hordeCleared', { id: e.id });
+                bus.emit('challengePassed', { id: e.id });
+              } else {
+                e.wave--;          // hold at the last wave until the field clears
+              }
+            } else {
+              const w = waves[e.wave];
+              const n = w.count ?? 1;
+              for (let i = 0; i < n; i++) {
+                // wave 0 ahead only; later waves flank from behind too
+                const behind = e.wave > 0 && i % 3 === 2;
+                const sx = behind ? p.x - 300 - (i * 40) : e.x + 60 + i * 52;
+                const c = new Creature(w.kind ?? 'wolf', sx, this.terrain);
+                e.pack.push(c);
+                this.creatures.push(c);
+              }
+              e.waveGap = w.delay ?? 1.6;
+              bus.emit('hordeWave', {
+                id: e.id, wave: e.wave + 1, of: waves.length, count: n, kind: w.kind ?? 'wolf',
+              });
+            }
+          }
+        }
+        if (!e.resolved && dist > 0) maxX = Math.min(maxX, e.x - 30);
+        if (e.started && !e.resolved) anyNear = true;
         continue;
       }
 

@@ -38,6 +38,7 @@ export class Creature {
     this.y = terrain.groundYAt(x);
     this.hp = def.hp;
     this.dead = false;
+    this.victim = null;      // set by takeDamage when a companion draws us
     this.state = 'patrol';
     this.facing = -1;
     this.timer = 0;
@@ -49,13 +50,28 @@ export class Creature {
 
   get engaged() { return !this.dead && this.state !== 'patrol'; }
 
-  takeDamage(n, fromX) {
+  /**
+   * @param attacker optional entity that dealt the blow. A creature struck by a
+   * companion will usually turn on them — without this the whole field funnels
+   * onto the player and a small party is WORSE than walking alone, because it
+   * aggros enemies it cannot then absorb.
+   */
+  takeDamage(n, fromX, attacker = null) {
     if (this.dead) return;
     this.hp -= n;
     this.flash = 0.18;
     this.x += Math.sign(this.x - fromX) * 7;
-    if (this.hp <= 0) { this.dead = true; this.state = 'dead'; bus.emit('creatureSlain', { kind: this.kind }); }
-    else if (this.state === 'patrol') { this.state = 'chase'; }
+    if (this.hp <= 0) {
+      this.dead = true; this.state = 'dead';
+      bus.emit('creatureSlain', { kind: this.kind });
+      return;
+    }
+    if (this.state === 'patrol') this.state = 'chase';
+    if (attacker && attacker.isCompanion && !attacker.downed) {
+      // guards hold attention hard; everyone else draws it about half the time
+      const draw = attacker.def?.guard ? 0.98 : 0.72;
+      if (Math.random() < draw) this.victim = attacker;
+    }
   }
 
   update(dt, player) {
@@ -63,8 +79,12 @@ export class Creature {
     if (this.flash > 0) this.flash -= dt;
     if (this.dead) { this.fade = Math.max(0, this.fade - dt * 0.8); return; }
 
+    // Fight whoever drew us, falling back to the player when that target is
+    // gone or downed.
+    const target = (this.victim && !this.victim.downed) ? this.victim : player;
+
     const d = this.def;
-    const dx = player.x - this.x;
+    const dx = target.x - this.x;
     const dist = Math.abs(dx);
     this.timer -= dt;
 
@@ -92,9 +112,9 @@ export class Creature {
         break;
       case 'lunge':
         this.x += this.facing * d.lungeSpeed * dt;
-        if (this.def.flying) this.y += (player.y - 34 - this.y) * 6 * dt;  // swoop
-        if (dist < 26 && Math.abs(player.y - 30 - this.y) < (this.def.flying ? 34 : 40) + 30) {
-          player.takeDamage(d.damage, this.x);
+        if (this.def.flying) this.y += (target.y - 34 - this.y) * 6 * dt;  // swoop
+        if (dist < 26 && Math.abs(target.y - 30 - this.y) < (this.def.flying ? 34 : 40) + 30) {
+          target.takeDamage(d.damage, this.x);
         }
         if (this.timer <= 0) { this.state = 'chase'; this.timer = d.cooldown; }
         break;

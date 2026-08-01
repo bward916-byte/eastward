@@ -13,8 +13,10 @@
 // Condition strings (authored in biome JSON as `requires` / `requiresAny`):
 //   "mdw-traveler"        encounter resolved at all
 //   "mdw-traveler=1"      resolved AND choice index 1 was taken
-//   "@companion"          mark exists and is truthy
-//   "@companion=mira"     mark equals value
+//   "@corran"             mark exists and is truthy
+//   "@corran=saved"       mark equals value
+//   "+mira"               that companion is in the party
+//   "#party>=3"           party-size threshold (>=, <=, >, < supported)
 //   "!mdw-traveler"       negation of any of the above
 //
 // `requires` is ALL-of; `requiresAny` is ANY-of. Both may be present.
@@ -47,6 +49,31 @@ export class Journal {
   }
 
   mark(key, value = true) { if (key) this.marks.set(key, value); }
+
+  // --- party roster ---------------------------------------------------------
+  // Stored as one ordered mark ('party') so it rides the existing save path
+  // with no extra schema. Order is recruitment order, which drives formation
+  // slots, so it must be preserved rather than sorted.
+  friends() {
+    const raw = this.get('party', '');
+    return String(raw).split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  hasFriend(id) { return this.friends().includes(id); }
+
+  addFriend(id) {
+    if (!id) return false;
+    const list = this.friends();
+    if (list.includes(id)) return false;
+    list.push(id);
+    this.mark('party', list.join(','));
+    return true;
+  }
+
+  removeFriend(id) {
+    const list = this.friends().filter(f => f !== id);
+    this.mark('party', list.join(','));
+  }
   unmark(key) { this.marks.delete(key); }
 
   has(id) { return this.decisions.has(id); }
@@ -66,18 +93,35 @@ export class Journal {
     let negate = false;
     while (t.startsWith('!')) { negate = !negate; t = t.slice(1).trim(); }
 
-    let result;
-    const eq = t.indexOf('=');
-    const key = eq === -1 ? t : t.slice(0, eq).trim();
-    const want = eq === -1 ? null : t.slice(eq + 1).trim();
+    // Operator must be matched longest-first so ">=" isn't read as ">".
+    let op = null, key = t, want = null;
+    for (const cand of ['>=', '<=', '=', '>', '<']) {
+      const i = t.indexOf(cand);
+      if (i > 0) { op = cand; key = t.slice(0, i).trim(); want = t.slice(i + cand.length).trim(); break; }
+    }
 
-    if (key.startsWith('@')) {
+    const cmp = (a, b) => {
+      const x = Number(a), y = Number(b);
+      switch (op) {
+        case '>=': return x >= y;
+        case '<=': return x <= y;
+        case '>': return x > y;
+        case '<': return x < y;
+        default: return String(a) === String(b);
+      }
+    };
+
+    let result;
+    if (key === '#party') {
+      // party size thresholds: "#party>=3" gates the late hordes
+      result = op ? cmp(this.friends().length, want) : this.friends().length > 0;
+    } else if (key.startsWith('+')) {
+      result = this.hasFriend(key.slice(1));
+    } else if (key.startsWith('@')) {
       const mk = key.slice(1);
-      if (want === null) result = !!this.get(mk, false);
-      else result = String(this.get(mk, '')) === want;
+      result = op === null ? !!this.get(mk, false) : cmp(this.get(mk, ''), want);
     } else {
-      if (want === null) result = this.has(key);
-      else result = this.has(key) && this.choiceOf(key) === Number(want);
+      result = op === null ? this.has(key) : (this.has(key) && cmp(this.choiceOf(key), want));
     }
     return negate ? !result : result;
   }

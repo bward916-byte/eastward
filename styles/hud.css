@@ -280,8 +280,6 @@
   padding: 6px 14px;
   cursor: pointer;
 }
-#journey-error { font-size: 11px; color: #e08a6a; margin-top: 6px; }
-#journey-error[hidden] { display: none; }
 
 #gold-counter {
   position: absolute;
@@ -409,3 +407,44 @@
 #attack-btn, #context-btn, #journey-btn {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
+
+
+/* --- Horde banner (§P) --- */
+#horde-banner {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 20px;
+  font: 600 clamp(13px, 2.4vw, 20px)/1.2 var(--ui-font, system-ui, sans-serif);
+  letter-spacing: 0.06em;
+  color: #f2e4c8;
+  background: rgba(28, 20, 16, 0.62);
+  border: 1px solid rgba(210, 170, 110, 0.45);
+  border-radius: 3px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 420ms ease;
+  z-index: 6;
+}
+#horde-banner.gone { opacity: 0; }
+
+/* --- Journey panel roster --- */
+.jp-sub {
+  margin: 6px 0 4px;
+  font-size: 0.92em;
+  font-weight: 600;
+  opacity: 0.85;
+}
+.roster-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(210, 170, 110, 0.16);
+}
+.roster-name { font-weight: 600; }
+.roster-role { font-size: 0.84em; opacity: 0.72; text-align: right; }
+.jp-deed { margin: 3px 0; font-size: 0.88em; opacity: 0.82; }

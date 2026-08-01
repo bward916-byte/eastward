@@ -131,6 +131,11 @@
       "x": 1100
     },
     {
+      "id": "cave-relic-3",
+      "type": "interest",
+      "x": 1500
+    },
+    {
       "id": "cave-bats",
       "type": "creature",
       "kind": "bat",
@@ -153,9 +158,32 @@
       "x": 2900
     },
     {
-      "id": "cave-relic-3",
-      "type": "interest",
-      "x": 1500
+      "id": "cave-tolm",
+      "type": "adventure",
+      "x": 3400,
+      "speaker": "Voice in the Dark",
+      "lines": [
+        "Bring the light slower. Slower. Thank you.",
+        "I came under three weeks ago with eleven others. The rest went on ahead and I have been listening for them since.",
+        "I am no fighter. I set bone and close wounds and that is the whole of it. But you are going to need someone who can, before the water."
+      ],
+      "choices": [
+        "Then walk with us",
+        "Stay by your fire"
+      ],
+      "responses": [
+        "Tolm, he says, and gathers his bundle with the unhurried care of a man who has packed it many times.",
+        "He does not argue. He only banks the fire lower, to make it last."
+      ],
+      "outcomes": [
+        {
+          "companion": "tolm",
+          "mark": {
+            "tolm": "joined"
+          }
+        },
+        {}
+      ]
     },
     {
       "id": "cave-boulder-2",
@@ -172,68 +200,36 @@
       "blocking": false
     },
     {
+      "id": "cave-horde",
+      "type": "horde",
+      "x": 4900,
+      "waves": [
+        {
+          "kind": "bat",
+          "count": 5
+        },
+        {
+          "kind": "bat",
+          "count": 6,
+          "delay": 1.8
+        },
+        {
+          "kind": "wolf",
+          "count": 4,
+          "delay": 2.2
+        },
+        {
+          "kind": "bat",
+          "count": 6,
+          "delay": 2.4,
+          "overlap": true
+        }
+      ]
+    },
+    {
       "id": "cave-relic-4",
       "type": "interest",
       "x": 4900
-    },
-    {
-      "id": "cave-bones",
-      "type": "adventure",
-      "x": 3400,
-      "speaker": "",
-      "lines": [
-        "A pack, propped upright against the cave wall as if set down for a moment.",
-        "The bedroll is still rolled. Whoever owned it meant to come back for it."
-      ],
-      "choices": [
-        "Take what's useful",
-        "Leave it as it stands"
-      ],
-      "responses": [
-        "Flint, a coil of good wire, and eleven coppers in a knotted cloth.",
-        "You set it straighter against the wall and go on into the dark."
-      ],
-      "outcomes": [
-        {
-          "gold": 11,
-          "artifacts": 1
-        },
-        {
-          "mark": {
-            "kindness": 1
-          }
-        }
-      ]
-    },
-    {
-      "id": "cave-corran-mark",
-      "type": "adventure",
-      "x": 4750,
-      "speaker": "",
-      "lines": [
-        "Someone has cut a mark into the rock at head height — a crossed circle, the sign a debt is owed and remembered.",
-        "Beneath it, scratched smaller: FOR THE ONE WHO STOPPED. And an arrow, pointing east.",
-        "Wedged in the crack below is a stoppered flask, left for whoever came after."
-      ],
-      "choices": [
-        "Take it"
-      ],
-      "responses": [
-        "It is good spirit, and it is still sealed. He came through here alive, then, and walking."
-      ],
-      "outcomes": [
-        {
-          "health": 25,
-          "gold": 20,
-          "mark": {
-            "corran_sign": 1
-          }
-        }
-      ],
-      "requiresAny": [
-        "@corran=saved",
-        "fst-wounded=0"
-      ]
     }
   ],
   "exitEast": {

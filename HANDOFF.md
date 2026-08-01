@@ -10,7 +10,7 @@ A 2D side-scrolling journey game: one life, walked always east, searching for a 
 
 ## Current State
 
-Playable end-to-end: **Intro (playable separation sequence) → Sunfall Meadow → Hearthstead village (Rite of Passage class selection + five services) → The Deepwood → The Mountain Pass (branching: High Route or Under the Mountain) → The Far Slopes → The Rivermouth → the low fires.** All major systems live: aging, injuries, day/night, wind/weather (incl. blizzards and snow depth), fully automatic combat, XP/upgrades, checkpoint saves, portable save codes, adaptive generative audio, seamless crossfade biome transitions, ambient wildlife/props, an 11-stop scripted demo tour, and full mobile touch support.
+Playable end-to-end: **Intro (playable separation sequence) → Sunfall Meadow → Hearthstead village (Rite of Passage class selection + five services) → The Deepwood → The Mountain Pass (branching: High Route or Under the Mountain) → The Far Slopes → The Rivermouth → the low fires.** All major systems live: aging, injuries, day/night, wind/weather (incl. blizzards and snow depth), fully automatic combat, XP/upgrades, checkpoint saves, a growing party of companions, escalating hordes, adaptive generative audio, seamless crossfade biome transitions, ambient wildlife/props, an 11-stop scripted demo tour, and full mobile touch support.
 
 ## Repo Layout
 
@@ -28,7 +28,6 @@ src/core/Camera.js         east-biased follow, dynamic zoom (§3.4), focusX over
 src/core/EventBus.js       shared pub/sub (the signal spine — see list below)
 src/core/Journal.js        journey-wide decision memory + `requires` conditions
 src/core/SaveManager.js    checkpoint-only saves, buildSnapshot, suspended guard
-src/core/SaveCodeCodec.js  portable codes: bit-pack + CRC-16 + Base32, version 'E3'
 src/core/OrientationGate.js landscape requirement (Amendment 02 §E)
 src/core/utils.js          clamp/lerp/damp/lerpColor
 src/entities/Player.js     locomotion state machine, stamina/endurance, combat, injuries
@@ -37,7 +36,7 @@ src/entities/Creature.js   wolf / boar / bat (flying) — targetableBy tags (§O
 src/entities/Projectile.js knives/bolts, light homing, willMiss sails wide
 src/entities/TargetAcquisition.js shared auto-aim nearest-valid-target
 src/entities/Guardian.js   intro guardian figure
-src/entities/Companion.js  Mira — recruited follower, trails/supports/departs
+src/entities/Companion.js  the party — six recruitable friends, roles, downed state
 src/systems/Dialogue.js    ground-anchored text box + choices (multi-event taps)
 src/systems/CombatResolver.js Accuracy/FightSpeed/AutoDodge math (§T.5) — one place
 src/systems/ExperienceManager.js XP from bus events, levelUp minor/major
@@ -90,8 +89,38 @@ bit-packs by index, so they stay in position flagged `gated`, which
 happen BEFORE `loadScene()`, since gating resolves in the `EncounterManager`
 constructor.
 
+**The party (§11).** `src/entities/Companion.js` defines six recruitable friends,
+each with a role that changes how a fight reads: `scout` (Mira, Fen), `shield`
+(Corran), `spear` (Bram), `archer` (Sela), `healer` (Tolm). One is recruited per
+biome; the Mountain Pass branch is exclusive — High Route gives Sela, Under the
+Mountain gives Tolm, so a run reaches at most five. Membership lives in the
+Journal mark `party`; `scene.party` is rebuilt from it on every scene load.
+
+Companions have HP and a **downed** state rather than death — a permanent loss
+mid-journey would desync the live party from the Journal roster. Downed friends
+stop fighting and stop drawing aggro, then get back up at 60% health.
+
+Two non-obvious things hold this together, both found by simulation:
+- Melee companions must close ON the threat, not merely tighten formation.
+  Creatures attack from ~42px ahead of the player; a companion in a tight rear
+  slot sits ~79px away with a 58px reach and never lands a blow. See `_targetX`.
+- `Creature.takeDamage` takes an optional `attacker` and usually switches its
+  `victim` to the companion who struck it (guards draw ~98%, others ~72%).
+  Without this, companions aggro the field onto the player and a small party is
+  measurably WORSE than walking alone.
+
+**Hordes (§P).** Encounter `type: "horde"` with `waves[{kind,count,delay,overlap}]`.
+A wave normally waits for the previous to fall (press / breathe / press); waves
+flagged `overlap` spawn on their timer regardless, which is what lets the late
+hordes saturate a full party instead of being killed off as they trickle in.
+`pack` accumulates across waves and the horde only resolves when every creature
+is down. Past wave 1 a third of each wave spawns BEHIND the player. Escalation is
+monotonic on every route: 6 → 9 → 12 → (19 high | 21 cave) → 26 → 35.
+Events: `hordeStarted`, `hordeWave`, `hordeCleared`.
+
 **EventBus signals** (the wiring spine): `checkpointReached`, `forceSave`, `gameSaved`, `enteredTown`, `leftTown`, `challengeApproaching`, `challengePassed`, `combatStarted`, `combatEnded`, `creatureSlain`, `interestCollected`, `adventureResolved`, `riteCompleted`, `branchChosen`,
-`companionJoined`, `weatherChanged`, `biomeTransition`, `introComplete`, `xpGained`, `levelUp`, `upgradeGranted`, `ageStageChanged`, `injuryGained`, `injuryHealed`, `playerDefeated`, `artifactsIdentified`, `goldChanged`. Music, saves, XP, and notifications all subscribe rather than being called.
+`companionJoined`, `companionLeft`, `companionDowned`, `companionRecovered`,
+`companionHealed`, `hordeStarted`, `hordeWave`, `hordeCleared`, `weatherChanged`, `biomeTransition`, `introComplete`, `xpGained`, `levelUp`, `upgradeGranted`, `ageStageChanged`, `injuryGained`, `injuryHealed`, `playerDefeated`, `artifactsIdentified`, `goldChanged`. Music, saves, XP, and notifications all subscribe rather than being called.
 
 ## Biome JSON Schema (everything is authored here)
 
@@ -105,7 +134,7 @@ pluckDensity,windBase}, checkpoints[{id,x,type cairn|shrine|campfire}],
 encounters[...], town{...}, exitEast{to,x} | endX
 ```
 
-Encounter types: `adventure` (blocking NPC, lines/choices/responses), `interest` (walk-over relic, optional `reward{artifacts,gold}`), `challenge` (`kind: push|boulder` — boulder is class-flavored: Wizard TK 0.9s/mana 15, Fighter 2.0s, else 3.2s), `creature` (`kind: wolf|boar|bat`, `count`, `blocking:false` for harassers), `lock` (Thief instant, others 30%/attempt), `branch` (`routes[]` → scene transition, §C multi-path), `rite` (class selection).
+Encounter types: `adventure` (blocking NPC, lines/choices/responses), `interest` (walk-over relic, optional `reward{artifacts,gold}`), `horde` (staged waves, see above), `challenge` (`kind: push|boulder` — boulder is class-flavored: Wizard TK 0.9s/mana 15, Fighter 2.0s, else 3.2s), `creature` (`kind: wolf|boar|bat`, `count`, `blocking:false` for harassers), `lock` (Thief instant, others 30%/attempt), `branch` (`routes[]` → scene transition, §C multi-path), `rite` (class selection).
 
 **Authoring rules (hard-won):**
 - Terrain interpolation is smoothstep between points: slopes flatten at segment ends and peak ~1.5× the linear angle mid-segment. Author accordingly; micro-noise applies only where near-flat so it can never distort a tier.
@@ -113,15 +142,15 @@ Encounter types: `adventure` (blocking NPC, lines/choices/responses), `interest`
 - **No blocking `creature`/combat encounter may precede the Rite** (meadow x<7250) — a classless player has no weapon.
 - A checkpoint before every hard cluster (Amendment 01 A.1).
 - Match ground heights at `exitEast`/entry (spawn x=60) within ~30px — the crossfade hides small steps only.
-- `manifest.json` biome/class/`journalKeys`/`companions` arrays and each biome's `checkpoints`/`encounters` arrays are **append-only**: save codes encode indices into them. Growing `encounters` invalidates existing codes (they reject cleanly via count check); reordering corrupts silently — never reorder.
+- Encounter/checkpoint arrays are free to edit — nothing indexes into them any more (save codes are gone). `manifest.json` still lists biomes, classes, and companions.
 
 ## Saves & Codes
 
 - One rolling slot in `localStorage['eastward.save']`, written ONLY on `checkpointReached`/`forceSave`. `SaveManager.suspended` gates all writes (demo mode + every restore path set it). `buildSnapshot()` captures live state without writing (demo resume uses this).
 - Snapshot: biome, checkpointId, player {x, facing, stamina, endurance, health, mana, maxHealth, artifacts, identified, gold, classId, skills{accuracy,fightSpeed,autoDodge,climbSkill}, xp, level, ageDays, injuries[kinds]}, world {timeOfDay, flags[]}.
-- Journal persists in `world.journal` (`{d:["id=choice"], m:["key=value"]}`). Save *codes* carry only the decisions listed in `manifest.journalKeys` (one nibble each) plus the `companion` mark — arbitrary marks do NOT survive a code. Where a payoff must survive both paths, gate on `requiresAny: ["@mark", "encId=n"]` (see `riv-corran`).
-- Codes: prefix **E4**, bit-packed + CRC-16 + Crockford Base32 (no I/L/O/U, confusables mapped on input), ~50–60 chars, dash-grouped (~79 with the Journal). `peekBiomeIndex` → fetch that biome → `decodeSnapshot`. Any schema change ⇒ bump the version prefix so old codes reject cleanly.
-- Reset: journey panel (✎, always visible) → "⟲ Start a new journey" (tap-twice confirm). URL `?new` also works.
+- Journal persists in `world.journal` (`{d:["id=choice"], m:["key=value"]}`), including the party roster (mark `party`, a comma list in recruitment order — order drives formation slots).
+- Portable save codes were REMOVED. With them went the append-only constraint on `encounters`/`checkpoints` arrays: those arrays may now be freely reordered, filtered, and edited. `manifest.json` no longer needs `journalKeys`.
+- The journey panel (✎) now shows the party roster and a record of the road behind, plus reset. Reset: "⟲ Start a new journey" (tap-twice confirm). URL `?new` also works.
 
 ## Controls
 
@@ -150,4 +179,4 @@ Desktop: ←→ walk (hold→run), ↑ jump (hold=higher; hold ↑+dir at a 45�
 
 ## Roadmap (spec items not yet built)
 
-Mounts (§9 — suits the longer roads and run-from-danger combat), the Mercenary Post (§11 / Amendment 01 §B — the `Companion` entity now exists; a hireable second one is mostly data), building interiors (Amendment 06 §N), hordes (§P — auto-combat already frames run-vs-fight), more flying enemies (§Q), Wizard Burn spell (§M.4), snowshoes shop item (§M.3), remaining trainer skills & Blacksmith/equipment (§7/§10), recorded audio stems (swap voice construction inside `BiomeMusic` only — layer/crossfade API stays), a title screen (would also host Load Code per §S.3), further biomes (author JSON + one `exitEast` line), and the reunion ending (§2).
+Mounts (§9 — suits the longer roads and run-from-danger combat), the Mercenary Post (§11 / Amendment 01 §B — the `Companion` entity now exists; a hireable second one is mostly data), building interiors (Amendment 06 §N), hordes (§P — auto-combat already frames run-vs-fight), more flying enemies (§Q), Wizard Burn spell (§M.4), snowshoes shop item (§M.3), remaining trainer skills & Blacksmith/equipment (§7/§10), recorded audio stems (swap voice construction inside `BiomeMusic` only — layer/crossfade API stays), a title screen, further biomes (author JSON + one `exitEast` line), and the reunion ending (§2).

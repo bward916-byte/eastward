@@ -11,7 +11,7 @@ import { bus } from './core/EventBus.js';
 import { journal } from './core/Journal.js';
 import { Player } from './entities/Player.js';
 import { Guardian } from './entities/Guardian.js';
-import { Companion } from './entities/Companion.js';
+import { Companion, COMPANIONS } from './entities/Companion.js';
 import { TerrainSpline } from './world/TerrainSpline.js';
 import { IntroTerrain } from './world/IntroTerrain.js';
 import { IntroSequence } from './world/IntroSequence.js';
@@ -186,22 +186,32 @@ async function boot() {
       parallax: new ParallaxRenderer(biome, terrain),
       props: new WorldProps(biome, terrain),
       wildlife: new AmbientWildlife(biome, terrain),
-      companion: null,
+      party: [],
     };
-    const compId = journal.get('companion');
-    if (compId && id !== 'intro') {
-      scene.companion = new Companion(compId, spawnX, terrain);
-      scene.companion.placeNear(player);
+    if (id !== 'intro') {
+      journal.friends().forEach((fid, i) => {
+        const c = new Companion(fid, spawnX, terrain, i);
+        c.placeNear(player);
+        scene.party.push(c);
+      });
     }
   }
 
-  // Recruited mid-scene by an adventure outcome — she walks in at the player.
+  // Recruited mid-scene by an adventure outcome — they fall in at the player.
   bus.on('companionJoined', ({ id }) => {
-    journal.mark('companion', id);
-    if (scene && scene.id !== 'intro' && !scene.companion) {
-      scene.companion = new Companion(id, player.x, scene.terrain);
-      scene.companion.placeNear(player);
-    }
+    if (!COMPANIONS[id]) return;
+    const isNew = journal.addFriend(id);
+    if (!isNew || !scene || scene.id === 'intro') return;
+    const c = new Companion(id, player.x, scene.terrain, scene.party.length);
+    c.placeNear(player);
+    scene.party.push(c);
+  });
+
+  bus.on('companionLeft', ({ id }) => {
+    journal.removeFriend(id);
+    if (!scene) return;
+    scene.party = scene.party.filter(c => c.id !== id);
+    scene.party.forEach((c, i) => { c.slot = i; });
   });
 
   // Resume at last checkpoint, or begin the intro (§2) on a fresh journey
@@ -358,7 +368,7 @@ async function boot() {
       }
       for (const cp of scene.checkpoints) cp.update(dt, player);
       scene.wildlife.update(dt, player);
-      scene.companion?.update(dt, player, scene.encounters.creatures);
+      for (const c of scene.party) c.update(dt, player, scene.encounters.creatures, projectiles);
       camera.update(dt, player);
       scene.parallax.update(dt);
       ambient.update(dt, player);
@@ -390,7 +400,7 @@ async function boot() {
       scene.wildlife.render(ctx);
       for (const cp of scene.checkpoints) cp.render(ctx, worldTime);
       scene.town?.render(ctx, worldTime);
-      scene.companion?.render(ctx, alpha);
+      for (const c of scene.party) c.render(ctx, alpha);
       scene.encounters.render(ctx, worldTime);
       for (const pr of projectiles) pr.render(ctx);
       levelFx.render(ctx, player.x, player.y);
@@ -447,18 +457,53 @@ async function boot() {
     if (!demo.active) demo.start();   // starts immediately — no consent step
   });
 
-  // --- Portable save codes (Amendment 07 §S) ---
+  // --- Journey panel: the party you have gathered and the road behind ---
   const journeyBtn = document.getElementById('journey-btn');
   const journeyPanel = document.getElementById('journey-panel');
-  const journeyCode = document.getElementById('journey-code');
-  const journeyInput = document.getElementById('journey-input');
-  const journeyError = document.getElementById('journey-error');
+  const partyRoster = document.getElementById('party-roster');
+  const journeyRecord = document.getElementById('journey-record');
+
+  const ROLE_TEXT = {
+    scout: 'ranges ahead, quick to close',
+    shield: 'stands in front of you',
+    spear: 'strikes over the line',
+    archer: 'looses into the pack',
+    healer: 'mends what the road breaks',
+  };
+
+  function renderJourneyPanel() {
+    const friends = journal.friends();
+    partyRoster.innerHTML = friends.length
+      ? friends.map(id => {
+          const d = COMPANIONS[id];
+          if (!d) return '';
+          return `<div class="roster-row"><span class="roster-name">${d.name}</span>` +
+                 `<span class="roster-role">${ROLE_TEXT[d.role] ?? d.role}</span></div>`;
+        }).join('')
+      : '<p class="jp-hint">You walk alone.</p>';
+
+    const deeds = [];
+    const kindness = Number(journal.get('kindness', 0));
+    if (kindness >= 3) deeds.push('You have stopped for people who could not repay you.');
+    else if (kindness > 0) deeds.push('You have stopped, at least once, for someone.');
+    if (journal.get('oath') === 'sworn') deeds.push('You swore on the oathstone to come back.');
+    if (journal.get('family_sign')) deeds.push('You have had word of them on the road.');
+    const cleared = Number(journal.get('hordes_cleared', 0));
+    if (cleared > 0) deeds.push(`You have broken ${cleared} ${cleared === 1 ? 'horde' : 'hordes'}.`);
+    if (friends.length >= 4) deeds.push('You do not walk east alone any more.');
+    journeyRecord.innerHTML = deeds.length
+      ? deeds.map(d => `<p class="jp-deed">${d}</p>`).join('')
+      : '<p class="jp-hint">Your journey has barely begun.</p>';
+  }
+
   bindTap(journeyBtn, () => {
-    journeyError.hidden = true;
-    journeyInput.value = '';
-    journeyCode.value = saveManager.exportCode(scene.biome, manifest) ?? '(no saved journey yet)';
+    renderJourneyPanel();
     journeyPanel.hidden = false;
   });
+  bindTap(document.getElementById('journey-close'), () => {
+    journeyPanel.hidden = true;
+  });
+
   const resetBtn = document.getElementById('journey-reset');
   let resetArmed = 0;
   bindTap(resetBtn, () => {
@@ -473,26 +518,29 @@ async function boot() {
     resetBtn.textContent = 'Tap again to erase everything';
     setTimeout(() => { resetBtn.textContent = '⟲ Start a new journey'; resetArmed = 0; }, 4000);
   });
-  bindTap(document.getElementById('journey-close'), () => {
-    journeyPanel.hidden = true;
+
+  // --- Horde banner (§P) ---
+  const hordeBanner = document.getElementById('horde-banner');
+  let hordeHideAt = 0;
+  function showHorde(text, ms = 2600) {
+    hordeBanner.textContent = text;
+    hordeBanner.classList.remove('gone');
+    hordeHideAt = performance.now() + ms;
+  }
+  bus.on('hordeWave', ({ wave, of, count, kind }) => {
+    const noun = count > 1 ? `${kind}s` : kind;
+    showHorde(`Wave ${wave} of ${of} — ${count} ${noun}`);
   });
-  bindTap(document.getElementById('journey-copy'), async () => {
-    try { await navigator.clipboard.writeText(journeyCode.value); } catch {
-      journeyCode.select(); document.execCommand?.('copy');
+  bus.on('hordeCleared', () => {
+    journal.mark('hordes_cleared', Number(journal.get('hordes_cleared', 0)) + 1);
+    showHorde('The road is clear.', 2200);
+  });
+  setInterval(() => {
+    if (hordeHideAt && performance.now() > hordeHideAt) {
+      hordeBanner.classList.add('gone');
+      hordeHideAt = 0;
     }
-  });
-  bindTap(document.getElementById('journey-load'), async () => {
-    journeyError.hidden = true;
-    const code = journeyInput.value.trim();
-    if (!code) return;
-    const biomeId = saveManager.peekCodeBiome(code, manifest);
-    if (!biomeId) { journeyError.hidden = false; return; }
-    const biomeData = await fetch(`data/biomes/${biomeId}.json`).then(r => r.json());
-    const snapIn = saveManager.importFromCode(code, biomeData, manifest);
-    if (!snapIn) { journeyError.hidden = false; return; }
-    journeyPanel.hidden = true;
-    await restoreFromSnapshot(snapIn);
-  });
+  }, 200);
 
   new OrientationGate((isLandscape) => {
     if (isLandscape) { resize(); loop.start(); }

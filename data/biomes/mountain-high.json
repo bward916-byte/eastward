@@ -207,11 +207,6 @@
       }
     },
     {
-      "id": "high-relic",
-      "type": "interest",
-      "x": 3200
-    },
-    {
       "id": "high-bats",
       "type": "creature",
       "kind": "bat",
@@ -220,63 +215,78 @@
       "blocking": false
     },
     {
+      "id": "high-relic",
+      "type": "interest",
+      "x": 3200
+    },
+    {
+      "id": "high-sela",
+      "type": "adventure",
+      "x": 4200,
+      "speaker": "Woman on the Ridge",
+      "lines": [
+        "Don't move. There's a pack working the gully below you and the wind is in your favour for about four more breaths.",
+        "...Right. They've gone. I've been up here a month picking them off and there are more every week.",
+        "I shoot better than I explain myself. If you're going down into that, you'll want someone above the line."
+      ],
+      "choices": [
+        "Come down with us",
+        "We'll manage"
+      ],
+      "responses": [
+        "Sela, she says, already moving, already looking for the next ridge worth standing on.",
+        "Suit yourself. She is back in the rocks before you have finished turning around."
+      ],
+      "outcomes": [
+        {
+          "companion": "sela",
+          "mark": {
+            "sela": "joined"
+          }
+        },
+        {}
+      ]
+    },
+    {
       "id": "high-relic-2",
       "type": "interest",
       "x": 4800
     },
     {
-      "id": "high-shepherd",
-      "type": "adventure",
-      "x": 4200,
-      "speaker": "Shepherd",
-      "lines": [
-        "Hoy! Off the ridge line — wind'll take you off it like a hat.",
-        "Nobody comes over the top in this season. They go under, through the dark, and pay the toll to whatever lives in it.",
-        "You came over the top. That's either courage or you've nobody left to be careful for."
-      ],
-      "choices": [
-        "I'm looking for my family",
-        "I took the safer road",
-        "Say nothing"
-      ],
-      "responses": [
-        "He is quiet a while. Then: a group came over this same ridge, before the snows. Worn thin. Asking after a child.",
-        "He laughs, once, into the wind. Safer. Aye. That's one word for the high road in winter.",
-        "He nods slowly, as if silence were the answer he expected, and points east with his crook."
-      ],
-      "outcomes": [
+      "id": "high-horde",
+      "type": "horde",
+      "x": 6200,
+      "waves": [
         {
-          "mark": {
-            "family_sign": "high"
-          }
+          "kind": "bat",
+          "count": 4
         },
-        {},
-        {}
+        {
+          "kind": "wolf",
+          "count": 5,
+          "delay": 2.0
+        },
+        {
+          "kind": "bat",
+          "count": 5,
+          "delay": 2.2
+        },
+        {
+          "kind": "wolf",
+          "count": 5,
+          "delay": 2.6,
+          "overlap": true
+        }
       ]
     },
     {
       "id": "high-relic-3",
       "type": "interest",
-      "x": 6300,
+      "x": 6800,
       "reward": {
         "artifacts": 1,
-        "gold": 12
+        "gold": 14
       }
-    },
-    {
-      "id": "high-wolves",
-      "type": "creature",
-      "x": 5100,
-      "kind": "wolf",
-      "count": 2
-    },
-    {
-      "id": "high-bats-2",
-      "type": "creature",
-      "x": 6650,
-      "kind": "bat",
-      "count": 2,
-      "blocking": false
     }
   ],
   "exitEast": {

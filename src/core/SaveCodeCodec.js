@@ -6,7 +6,7 @@
 // arrays), never a hand-maintained mapping (§S.6). Zero dependencies.
 
 const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-const VERSION = 'E3';  // E1/E2 codes predate aging/injuries — cleanly rejected
+const VERSION = 'E4';  // E1-E3 codes predate the Journal — cleanly rejected
 
 function crc16(bytes) {
   let crc = 0xFFFF;
@@ -93,6 +93,30 @@ export function encodeSnapshot(snap, biome, manifest) {
     }
     b.push(byte);
   }
+  // Journal (§Journal): one nibble per manifest.journalKeys entry —
+  // 0 = never recorded, else choice index + 1. Two keys per byte. The key
+  // table is append-only, so old positions keep their meaning.
+  const jkeys = manifest.journalKeys ?? [];
+  const jd = new Map((snap.world?.journal?.d ?? []).map(str => {
+    const i = String(str).lastIndexOf('=');
+    return i > 0 ? [str.slice(0, i), Number(str.slice(i + 1)) | 0] : [String(str), 0];
+  }));
+  u8(b, jkeys.length);
+  for (let i = 0; i < jkeys.length; i += 2) {
+    const lo = jd.has(jkeys[i]) ? Math.min(15, jd.get(jkeys[i]) + 1) : 0;
+    const hi = (i + 1 < jkeys.length && jd.has(jkeys[i + 1]))
+      ? Math.min(15, jd.get(jkeys[i + 1]) + 1) : 0;
+    b.push((hi << 4) | lo);
+  }
+  // companion mark as an index into the append-only companions table
+  const jm = new Map((snap.world?.journal?.m ?? []).map(str => {
+    const i = String(str).lastIndexOf('=');
+    return i > 0 ? [str.slice(0, i), str.slice(i + 1)] : [String(str), ''];
+  }));
+  const comps = manifest.companions ?? [];
+  const ci = comps.indexOf(jm.get('companion'));
+  u8(b, ci >= 0 ? ci : 255);
+
   const crc = crc16(b);
   u16(b, crc);
   const raw = toBase32(b);
@@ -157,13 +181,30 @@ export function decodeSnapshot(code, biome, manifest) {
         if (byte & (1 << j)) flags.push(encs[k + j].id);
       }
     }
+    // Journal — mirror of the encode side (nibble per key, then companion)
+    const jkeyCount = r8();
+    const jkeys = manifest.journalKeys ?? [];
+    if (jkeyCount > jkeys.length) return null;  // code from a newer key table
+    const jd = [];
+    for (let k = 0; k < jkeyCount; k += 2) {
+      const byte = r8();
+      const lo = byte & 0x0f, hi = (byte >> 4) & 0x0f;
+      if (lo) jd.push(`${jkeys[k]}=${lo - 1}`);
+      if (hi && k + 1 < jkeyCount) jd.push(`${jkeys[k + 1]}=${hi - 1}`);
+    }
+    const compIdx = r8();
+    const jm = [];
+    const comps = manifest.companions ?? [];
+    if (compIdx !== 255 && comps[compIdx]) jm.push(`companion=${comps[compIdx]}`);
+    if (classId) jm.push(`class=${classId}`);
+
     return {
       version: 1,
       checkpointId,
       biome: biomeId,
       savedAt: Date.now(),
       player: { x, facing, stamina, endurance, health, mana, artifacts, identified, gold, classId, skills, maxHealth, xp, level, ageDays, injuries },
-      world: { timeOfDay, flags },
+      world: { timeOfDay, flags, journal: { d: jd, m: jm } },
     };
   } catch {
     return null;

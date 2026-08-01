@@ -127,7 +127,7 @@
       "x": 1300,
       "speaker": "",
       "lines": [
-        "A campfire ring beside the path. The ash is fresh \u2014 still faintly warm.",
+        "A campfire ring beside the path. The ash is fresh — still faintly warm.",
         "Whoever sat here left in no hurry. Heading east, down toward the green."
       ],
       "choices": [
@@ -155,9 +155,98 @@
       "kind": "wolf",
       "count": 2,
       "x": 3450
+    },
+    {
+      "id": "east-widow",
+      "type": "adventure",
+      "x": 2200,
+      "speaker": "Woman at the Cairn",
+      "lines": [
+        "You've the look of the road on you. Sit a moment, it costs nothing.",
+        "I keep this cairn. People leave word here for the ones behind them — it's the last stone before the water."
+      ],
+      "choices": [
+        "Has a family passed? Asking after a child.",
+        "Only rest, thank you."
+      ],
+      "responses": [
+        "She goes still. Yes, she says. Not long ago. They left word on the stone and went down to the crossing to wait. They have been waiting a while now.",
+        "Then rest. The wind here is kinder than it looks."
+      ],
+      "outcomes": [
+        {
+          "mark": {
+            "family_sign": "cairn"
+          }
+        },
+        {}
+      ]
+    },
+    {
+      "id": "east-mira-parting",
+      "type": "adventure",
+      "x": 3800,
+      "speaker": "Mira",
+      "requires": [
+        "@companion=mira"
+      ],
+      "lines": [
+        "This is where I stop.",
+        "The cairn-keeper had word of a tall man with a scar through his eyebrow. North, along the water, three weeks back. That's my road now.",
+        "You'll be at the crossing by dark. Go on — I'll not make a thing of it."
+      ],
+      "choices": [
+        "Go find him",
+        "Stay with me a while longer"
+      ],
+      "responses": [
+        "She grips your forearm the way soldiers do, and then she is walking north and not looking back.",
+        "She shakes her head, but she is smiling. Two winters I've looked for him. You'd not ask me to stop now."
+      ],
+      "outcomes": [
+        {
+          "unmark": [
+            "companion"
+          ],
+          "mark": {
+            "mira_ending": "north"
+          }
+        },
+        {
+          "unmark": [
+            "companion"
+          ],
+          "mark": {
+            "mira_ending": "north"
+          }
+        }
+      ]
+    },
+    {
+      "id": "east-relic-3",
+      "type": "interest",
+      "x": 900,
+      "reward": {
+        "artifacts": 1,
+        "gold": 9
+      }
+    },
+    {
+      "id": "east-boar",
+      "type": "creature",
+      "x": 2650,
+      "kind": "boar",
+      "count": 1
+    },
+    {
+      "id": "east-bats",
+      "type": "creature",
+      "x": 1550,
+      "kind": "bat",
+      "count": 2,
+      "blocking": false
     }
   ],
-  "endX": 4200,
   "props": [
     "flowers",
     "rock",
@@ -167,5 +256,9 @@
     "bird",
     "rabbit"
   ],
-  "propDensity": 0.5
+  "propDensity": 0.5,
+  "exitEast": {
+    "to": "rivermouth",
+    "x": 4300
+  }
 }

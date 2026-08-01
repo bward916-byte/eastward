@@ -7,6 +7,7 @@
 // persist in checkpoint worldFlags (Amendment 01 §A.4).
 
 import { bus } from '../core/EventBus.js';
+import { journal } from '../core/Journal.js';
 import { clamp } from '../core/utils.js';
 import { Creature } from '../entities/Creature.js';
 
@@ -20,10 +21,14 @@ export class EncounterManager {
     this.terrain = terrain;
     this.player = player;
     this.dialogue = dialogue;
+    // NOTE: this array is index-addressed by SaveCodeCodec's bit-packing, so
+    // conditional encounters are NEVER filtered out — they stay in position and
+    // are flagged `gated`, which update()/draw() skip. Keeps codes stable.
     this.encounters = (defs ?? []).map(d => ({
       ...d,
       y: terrain.groundYAt(d.x),
       resolved: false,
+      gated: !journal.allows(d),   // §Journal — requires / requiresAny
       progress: 0,        // challenge push progress
       _dialogueOpen: false,
       sparkle: 0,
@@ -44,7 +49,7 @@ export class EncounterManager {
   nearestFlaggedDistance(x) {
     let min = Infinity;
     for (const e of this.encounters) {
-      if (!e.resolved) min = Math.min(min, Math.abs(e.x - x));
+      if (!e.resolved && !e.gated) min = Math.min(min, Math.abs(e.x - x));
     }
     return min;
   }
@@ -57,7 +62,7 @@ export class EncounterManager {
 
     for (const e of this.encounters) {
       if (e.sparkle > 0) e.sparkle -= dt;
-      if (e.resolved) continue;
+      if (e.resolved || e.gated) continue;
       const dist = e.x - p.x;
 
       if (Math.abs(dist) < APPROACH_R && (e.type === 'adventure' || e.type === 'challenge')) {
@@ -223,12 +228,38 @@ export class EncounterManager {
     if (e.responses?.[choice]) {
       await this.dialogue.say([e.responses[choice]], { speaker: e.speaker ?? '', autoMs: 3400 });
     }
+    // adventureResolved must land BEFORE outcomes so the Journal has recorded
+    // the choice by the time anything reacts to a mark being set.
     bus.emit('adventureResolved', { id: e.id, choice });
+    this._applyOutcome(e.outcomes?.[choice]);
     bus.emit('challengePassed', { id: e.id });
+  }
+
+  /** Authored consequences of a choice (§Journal): marks, gold, artifacts, harm. */
+  _applyOutcome(out) {
+    if (!out) return;
+    const p = this.player;
+    if (out.mark) {
+      for (const [k, v] of Object.entries(out.mark)) journal.mark(k, v);
+    }
+    if (out.unmark) {
+      for (const k of [].concat(out.unmark)) journal.unmark(k);
+    }
+    if (out.gold) {
+      p.gold = Math.max(0, (p.gold ?? 0) + out.gold);
+      bus.emit('goldChanged', { gold: p.gold, delta: out.gold });
+    }
+    if (out.artifacts) p.artifacts = Math.max(0, (p.artifacts ?? 0) + out.artifacts);
+    if (out.health) {
+      p.health = clamp((p.health ?? 100) + out.health, 1, p.maxHealth ?? 100);
+    }
+    if (out.companion) bus.emit('companionJoined', { id: out.companion });
+    if (out.event) bus.emit(out.event, { source: 'outcome' });
   }
 
   render(ctx, time) {
     for (const e of this.encounters) {
+      if (e.gated) continue;
       if (e.type === 'adventure') this._renderNPC(ctx, e, time);
       else if (e.type === 'branch') this._renderBranch(ctx, e, time);
       else if (e.type === 'lock') this._renderVault(ctx, e, time);

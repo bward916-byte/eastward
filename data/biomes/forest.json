@@ -201,7 +201,7 @@
       "speaker": "Woodcutter",
       "lines": [
         "Small roads bring small travelers. You're the one they asked after.",
-        "A family \u2014 worn thin, hopeful. Camped here three nights past, then east through the hollow.",
+        "A family — worn thin, hopeful. Camped here three nights past, then east through the hollow.",
         "Mind the wood past the shrine. The boars are foul-tempered this season."
       ],
       "choices": [
@@ -209,8 +209,8 @@
         "Ask about the hollow"
       ],
       "responses": [
-        "East, then. Walk loud \u2014 the wood dislikes surprises.",
-        "Low ground, wet ground. A tree came down across the path \u2014 you'll need your shoulder."
+        "East, then. Walk loud — the wood dislikes surprises.",
+        "Low ground, wet ground. A tree came down across the path — you'll need your shoulder."
       ]
     },
     {
@@ -288,6 +288,76 @@
       "count": 2,
       "x": 9800,
       "blocking": false
+    },
+    {
+      "id": "fst-wounded",
+      "type": "adventure",
+      "x": 7100,
+      "speaker": "Wounded Man",
+      "lines": [
+        "Don't — don't come closer with a blade out.",
+        "Boar caught me at the ford. I can't put weight on it and the light's going."
+      ],
+      "choices": [
+        "Bind the leg and stay till dawn",
+        "Leave him your water and go on",
+        "Go on"
+      ],
+      "responses": [
+        "It costs you a night and most of your strength. In the morning he can stand. He tells you his name is Corran and that he will not forget yours.",
+        "He takes it with both hands. It is not enough and you both know it.",
+        "You hear him call out once, behind you, and then not again."
+      ],
+      "outcomes": [
+        {
+          "health": -12,
+          "mark": {
+            "corran": "saved",
+            "kindness": 1
+          }
+        },
+        {
+          "mark": {
+            "corran": "water"
+          }
+        },
+        {
+          "mark": {
+            "corran": "left"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fst-snare",
+      "type": "adventure",
+      "x": 4200,
+      "speaker": "Mira",
+      "requires": [
+        "@companion=mira"
+      ],
+      "lines": [
+        "Stop. Look — there, across the deer track.",
+        "Wire, set at knee height and freshly sprung. Someone walked into this ahead of us and got themselves free.",
+        "Whoever it was, they were moving east. And they were bleeding."
+      ],
+      "choices": [
+        "Follow the sign",
+        "Leave it"
+      ],
+      "responses": [
+        "The trail bends off the path and ends at a torn strip of cloth caught in bramble. She folds it away without a word.",
+        "She looks at the wire a moment longer than you do, then follows."
+      ],
+      "outcomes": [
+        {
+          "artifacts": 1,
+          "mark": {
+            "snare_trail": 1
+          }
+        },
+        {}
+      ]
     }
   ],
   "exitEast": {

@@ -197,7 +197,7 @@
       "x": 1250,
       "speaker": "Traveler",
       "lines": [
-        "You there \u2014 small one. Alone on this road?",
+        "You there — small one. Alone on this road?",
         "A family passed through two days back. Worn out, asking after a child. They pressed on east, toward the pass.",
         "It's a hard road ahead. What will you do?"
       ],
@@ -207,7 +207,7 @@
       ],
       "responses": [
         "Then walk fast and rest when you must. East, always east.",
-        "Only that they'd wait where they could. Look for signs at the waysides \u2014 cairns, shrines. Travelers leave word there."
+        "Only that they'd wait where they could. Look for signs at the waysides — cairns, shrines. Travelers leave word there."
       ]
     },
     {
@@ -239,7 +239,7 @@
       "x": 7250,
       "speaker": "Elder",
       "lines": [
-        "So the road brought you here, little one. Rest \u2014 the village is safe.",
+        "So the road brought you here, little one. Rest — the village is safe.",
         "Travelers spoke of your family. East, past the pass. You'll need more than luck to follow.",
         "It is time for your Rite of Passage. What are your hands made for?"
       ],
@@ -256,7 +256,7 @@
       "responses": [
         "Quick and quiet, then. Keep your knives close and your feet closer.",
         "The will bends the world, in time. Start with a spark.",
-        "Strong hands. Swing wide, stand fast \u2014 but the sky will never fear you."
+        "Strong hands. Swing wide, stand fast — but the sky will never fear you."
       ]
     },
     {
@@ -297,6 +297,117 @@
         "artifacts": 1,
         "gold": 10
       }
+    },
+    {
+      "id": "mdw-hungry-boy",
+      "type": "adventure",
+      "x": 3000,
+      "speaker": "Thin Boy",
+      "lines": [
+        "Have you food? Any at all.",
+        "Ma went east for work in the spring. She hasn't come back for me."
+      ],
+      "choices": [
+        "Share what you carry",
+        "You'll manage. So will I.",
+        "Come to the village with me"
+      ],
+      "responses": [
+        "He eats without looking up. When he finishes he presses a chipped copper into your hand — his whole fortune, and he will not take it back.",
+        "He nods like he expected it. That is the part that stays with you.",
+        "He shakes his head. Not without her. She'll come back to this road, he says, and I'll be on it."
+      ],
+      "outcomes": [
+        {
+          "gold": -8,
+          "mark": {
+            "kindness": 1
+          }
+        },
+        {
+          "mark": {
+            "kindness": 0
+          }
+        },
+        {
+          "mark": {
+            "kindness": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "mdw-mira",
+      "type": "adventure",
+      "x": 8200,
+      "speaker": "Mira",
+      "lines": [
+        "You walk like someone chasing, not wandering.",
+        "I'm looking for my brother. Two winters now. Every road east, every village, every wayside stone.",
+        "Two sets of eyes catch more sign than one. And the pass is no place to be alone."
+      ],
+      "choices": [
+        "Walk with me",
+        "I go faster alone",
+        "What did your brother look like?"
+      ],
+      "responses": [
+        "She falls in a half-step behind and to your left, where she can see the road and you both.",
+        "She doesn't argue. She only says: the pass is no place to be alone. Then she is behind you, and then she is gone.",
+        "Tall, she says. A scar through one eyebrow. He'd have been asking after work, not family — he was proud that way."
+      ],
+      "outcomes": [
+        {
+          "companion": "mira",
+          "mark": {
+            "mira_offer": "taken"
+          }
+        },
+        {
+          "mark": {
+            "mira_offer": "refused"
+          }
+        },
+        {
+          "mark": {
+            "mira_offer": "asked"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mdw-mira-second",
+      "type": "adventure",
+      "x": 11800,
+      "speaker": "Mira",
+      "requires": [
+        "mdw-mira=2"
+      ],
+      "lines": [
+        "You again. Still walking east.",
+        "I've thought about it. The offer stands, if you've changed your mind."
+      ],
+      "choices": [
+        "Walk with me",
+        "Still alone"
+      ],
+      "responses": [
+        "Good, she says, and shoulders her pack without ceremony.",
+        "Then luck to you. Truly."
+      ],
+      "outcomes": [
+        {
+          "companion": "mira",
+          "mark": {
+            "mira_offer": "taken"
+          }
+        },
+        {
+          "mark": {
+            "mira_offer": "refused"
+          }
+        }
+      ]
     }
   ],
   "town": {

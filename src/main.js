@@ -8,8 +8,10 @@ import { Camera } from './core/Camera.js';
 import { SaveManager } from './core/SaveManager.js';
 import { OrientationGate } from './core/OrientationGate.js';
 import { bus } from './core/EventBus.js';
+import { journal } from './core/Journal.js';
 import { Player } from './entities/Player.js';
 import { Guardian } from './entities/Guardian.js';
+import { Companion } from './entities/Companion.js';
 import { TerrainSpline } from './world/TerrainSpline.js';
 import { IntroTerrain } from './world/IntroTerrain.js';
 import { IntroSequence } from './world/IntroSequence.js';
@@ -96,9 +98,11 @@ async function boot() {
   const xpManager = new ExperienceManager();
   new UpgradeResolver(player);
   const levelFx = new LevelUpNotification(music);
+  journal.wire();   // decisions outlive the biome border (§Journal)
   saveManager.getWorldState = () => ({
     timeOfDay: dayNight.phase,
     flags: scene?.encounters?.getFlags() ?? [],
+    journal: journal.serialize(),
   });
 
   let scene = null;
@@ -182,12 +186,29 @@ async function boot() {
       parallax: new ParallaxRenderer(biome, terrain),
       props: new WorldProps(biome, terrain),
       wildlife: new AmbientWildlife(biome, terrain),
+      companion: null,
     };
+    const compId = journal.get('companion');
+    if (compId && id !== 'intro') {
+      scene.companion = new Companion(compId, spawnX, terrain);
+      scene.companion.placeNear(player);
+    }
   }
+
+  // Recruited mid-scene by an adventure outcome — she walks in at the player.
+  bus.on('companionJoined', ({ id }) => {
+    journal.mark('companion', id);
+    if (scene && scene.id !== 'intro' && !scene.companion) {
+      scene.companion = new Companion(id, player.x, scene.terrain);
+      scene.companion.placeNear(player);
+    }
+  });
 
   // Resume at last checkpoint, or begin the intro (§2) on a fresh journey
   const snap = saveManager.load();
   if (snap) {
+    // MUST precede loadScene: encounter gating resolves at construction time
+    journal.restore(snap.world?.journal);
     await loadScene(snap.biome ?? 'meadow', snap.player.x);
     saveManager.applyTo(player, snap);
     if (snap.player.classId) {
@@ -337,6 +358,7 @@ async function boot() {
       }
       for (const cp of scene.checkpoints) cp.update(dt, player);
       scene.wildlife.update(dt, player);
+      scene.companion?.update(dt, player, scene.encounters.creatures);
       camera.update(dt, player);
       scene.parallax.update(dt);
       ambient.update(dt, player);
@@ -368,6 +390,7 @@ async function boot() {
       scene.wildlife.render(ctx);
       for (const cp of scene.checkpoints) cp.render(ctx, worldTime);
       scene.town?.render(ctx, worldTime);
+      scene.companion?.render(ctx, alpha);
       scene.encounters.render(ctx, worldTime);
       for (const pr of projectiles) pr.render(ctx);
       levelFx.render(ctx, player.x, player.y);
@@ -442,6 +465,7 @@ async function boot() {
     const now = performance.now();
     if (now - resetArmed < 4000) {
       localStorage.removeItem('eastward.save');
+      journal.clear();
       location.href = location.pathname;   // clean reload → the intro
       return;
     }

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "biomes": [
     "intro",
     "meadow",
@@ -7,11 +7,29 @@
     "mountain",
     "mountain-high",
     "mountain-cave",
-    "mountain-east"
+    "mountain-east",
+    "rivermouth"
   ],
   "classes": [
     "thief",
     "wizard",
     "fighter"
+  ],
+  "journalKeys": [
+    "mdw-traveler",
+    "mdw-mira",
+    "mdw-hungry-boy",
+    "fst-wounded",
+    "fst-snare",
+    "mtn-branch",
+    "mtn-oathstone",
+    "cave-bones",
+    "high-shepherd",
+    "east-widow",
+    "east-mira-parting",
+    "riv-ferryman"
+  ],
+  "companions": [
+    "mira"
   ]
 }

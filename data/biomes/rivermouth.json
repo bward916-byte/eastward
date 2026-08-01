@@ -1,0 +1,304 @@
+{
+  "id": "rivermouth",
+  "name": "THE RIVERMOUTH",
+  "palette": {
+    "skyTop": "#7ea6c8",
+    "skyBottom": "#f0dcc0",
+    "sun": "#fff4d0",
+    "l2Base": "#93a6b4",
+    "l2Accent": "#b2c2cc",
+    "l3Base": "#6f8a7e",
+    "l3Accent": "#8aa596",
+    "l4Base": "#557a62",
+    "l4Accent": "#6f9878",
+    "l5Base": "#3e5e50",
+    "l5Accent": "#547a64",
+    "groundTop": "#7a9a62",
+    "groundDeep": "#5c7a4c",
+    "dirt": "#93794f",
+    "fogTint": "rgba(240, 220, 192, 0.14)"
+  },
+  "layerScroll": {
+    "l2": 0.05,
+    "l3": 0.14,
+    "l4": 0.34,
+    "l5": 0.78
+  },
+  "layerStyle": {
+    "treeStep": 118
+  },
+  "groundY": 520,
+  "grassDensity": 0.11,
+  "propDensity": 0.55,
+  "props": [
+    "flowers",
+    "rock",
+    "stump",
+    "deadtree"
+  ],
+  "wildlife": [
+    "bird",
+    "rabbit"
+  ],
+  "terrain": {
+    "points": [
+      [
+        0,
+        520
+      ],
+      [
+        600,
+        548
+      ],
+      [
+        1300,
+        585
+      ],
+      [
+        2000,
+        600
+      ],
+      [
+        2600,
+        588
+      ],
+      [
+        2900,
+        545
+      ],
+      [
+        3400,
+        560
+      ],
+      [
+        4100,
+        596
+      ],
+      [
+        4800,
+        610
+      ],
+      [
+        5600,
+        614
+      ],
+      [
+        6300,
+        600
+      ],
+      [
+        7000,
+        605
+      ]
+    ]
+  },
+  "snow": {
+    "zones": []
+  },
+  "environment": {
+    "dayNight": true,
+    "weather": true
+  },
+  "caveLight": false,
+  "wind": {
+    "base": 0.14,
+    "gustiness": 0.26,
+    "prevailing": 1
+  },
+  "weather": {
+    "clear": 0.45,
+    "gust": 0.15,
+    "rain": 0.2,
+    "fog": 0.2
+  },
+  "audio": {
+    "root": 55,
+    "mode": "majorPent",
+    "tempo": 54,
+    "chord": [
+      43,
+      50,
+      55,
+      62
+    ],
+    "brightness": 950,
+    "pluckDensity": 0.3,
+    "windBase": 0.12
+  },
+  "checkpoints": [
+    {
+      "id": "riv-landing",
+      "x": 150,
+      "type": "cairn"
+    },
+    {
+      "id": "riv-shrine",
+      "x": 2350,
+      "type": "shrine"
+    },
+    {
+      "id": "riv-camp",
+      "x": 4200,
+      "type": "campfire"
+    },
+    {
+      "id": "riv-crossing",
+      "x": 6100,
+      "type": "cairn"
+    }
+  ],
+  "encounters": [
+    {
+      "id": "riv-relic-1",
+      "type": "interest",
+      "x": 800,
+      "reward": {
+        "artifacts": 1,
+        "gold": 10
+      }
+    },
+    {
+      "id": "riv-wolves",
+      "type": "creature",
+      "x": 1500,
+      "kind": "wolf",
+      "count": 2
+    },
+    {
+      "id": "riv-ferryman",
+      "type": "adventure",
+      "x": 2650,
+      "speaker": "Ferryman",
+      "lines": [
+        "Crossing's closed till the water drops. Two days, maybe three.",
+        "There's a camp on the bank — everyone waiting, same as you. Some have been there a season.",
+        "Cold night to be standing about. You'll want to go down and find a fire."
+      ],
+      "choices": [
+        "Ask who's waiting there",
+        "Pay for a crossing now",
+        "Go down to the camp"
+      ],
+      "responses": [
+        "Families, mostly. Folk who lost each other on the road and think the water's where they'll find each other again. Sometimes they're right.",
+        "He looks at your purse, then at the river, and shakes his head. Not for any coin. I've pulled enough people out of it.",
+        "Aye. Go on down. Ask at the fires — that's what they're for."
+      ],
+      "outcomes": [
+        {
+          "mark": {
+            "ferry": "asked"
+          }
+        },
+        {
+          "mark": {
+            "ferry": "refused"
+          }
+        },
+        {}
+      ]
+    },
+    {
+      "id": "riv-log",
+      "type": "challenge",
+      "x": 3300,
+      "kind": "push"
+    },
+    {
+      "id": "riv-relic-2",
+      "type": "interest",
+      "x": 3800,
+      "reward": {
+        "artifacts": 1,
+        "gold": 14
+      }
+    },
+    {
+      "id": "riv-boars",
+      "type": "creature",
+      "x": 4600,
+      "kind": "boar",
+      "count": 2
+    },
+    {
+      "id": "riv-corran",
+      "type": "adventure",
+      "x": 5000,
+      "speaker": "Corran",
+      "lines": [
+        "I know that walk. I'd know it in the dark.",
+        "I told you I'd not forget. Sit — there's stew and it's hot, which is more than this camp usually manages.",
+        "Listen. There's a family been at the low fires eleven days. Asking everyone who comes down the road after a child. I told them people do come down that road. I told them it happens."
+      ],
+      "choices": [
+        "Where are the low fires?",
+        "Eat first"
+      ],
+      "responses": [
+        "Along the water, past the last of the tents. You'll see them from the rise.",
+        "He puts the bowl in your hands and does not let you refuse it. Eat, he says. Then go. They'll not have moved."
+      ],
+      "outcomes": [
+        {
+          "mark": {
+            "family_sign": "lowfires"
+          },
+          "health": 20
+        },
+        {
+          "mark": {
+            "family_sign": "lowfires"
+          },
+          "health": 30,
+          "gold": 15
+        }
+      ],
+      "requiresAny": [
+        "@corran=saved",
+        "fst-wounded=0"
+      ]
+    },
+    {
+      "id": "riv-relic-3",
+      "type": "interest",
+      "x": 5500,
+      "reward": {
+        "artifacts": 1,
+        "gold": 12
+      }
+    },
+    {
+      "id": "riv-bats",
+      "type": "creature",
+      "x": 5800,
+      "kind": "bat",
+      "count": 2,
+      "blocking": false
+    },
+    {
+      "id": "riv-lowfires",
+      "type": "adventure",
+      "x": 6600,
+      "speaker": "",
+      "lines": [
+        "The low fires are small and there are many of them, strung along the shingle where the river widens and goes quiet.",
+        "People sit at them in twos and threes, facing the road rather than the water. They look up when anyone comes down the rise. They have done this many times.",
+        "At the fire nearest the water, someone stands."
+      ],
+      "choices": [
+        "Go down"
+      ],
+      "responses": [
+        "The journey does not end here — but for the first time since the bridge, it is pointed at something instead of away."
+      ],
+      "outcomes": [
+        {
+          "mark": {
+            "reached_lowfires": 1
+          }
+        }
+      ]
+    }
+  ],
+  "endX": 6900
+}

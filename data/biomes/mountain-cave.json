@@ -175,6 +175,65 @@
       "id": "cave-relic-4",
       "type": "interest",
       "x": 4900
+    },
+    {
+      "id": "cave-bones",
+      "type": "adventure",
+      "x": 3400,
+      "speaker": "",
+      "lines": [
+        "A pack, propped upright against the cave wall as if set down for a moment.",
+        "The bedroll is still rolled. Whoever owned it meant to come back for it."
+      ],
+      "choices": [
+        "Take what's useful",
+        "Leave it as it stands"
+      ],
+      "responses": [
+        "Flint, a coil of good wire, and eleven coppers in a knotted cloth.",
+        "You set it straighter against the wall and go on into the dark."
+      ],
+      "outcomes": [
+        {
+          "gold": 11,
+          "artifacts": 1
+        },
+        {
+          "mark": {
+            "kindness": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "cave-corran-mark",
+      "type": "adventure",
+      "x": 4750,
+      "speaker": "",
+      "lines": [
+        "Someone has cut a mark into the rock at head height — a crossed circle, the sign a debt is owed and remembered.",
+        "Beneath it, scratched smaller: FOR THE ONE WHO STOPPED. And an arrow, pointing east.",
+        "Wedged in the crack below is a stoppered flask, left for whoever came after."
+      ],
+      "choices": [
+        "Take it"
+      ],
+      "responses": [
+        "It is good spirit, and it is still sealed. He came through here alive, then, and walking."
+      ],
+      "outcomes": [
+        {
+          "health": 25,
+          "gold": 20,
+          "mark": {
+            "corran_sign": 1
+          }
+        }
+      ],
+      "requiresAny": [
+        "@corran=saved",
+        "fst-wounded=0"
+      ]
     }
   ],
   "exitEast": {

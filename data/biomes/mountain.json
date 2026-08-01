@@ -161,7 +161,7 @@
       "speaker": "Guide",
       "lines": [
         "Higher than it looks, colder than it feels. You are the searcher, then.",
-        "They went over \u2014 or under, none could say. The peak breaks two ways ahead.",
+        "They went over — or under, none could say. The peak breaks two ways ahead.",
         "The high climb is shortest, if your hands are trained for it. The caves are kinder to those who are not."
       ],
       "choices": [
@@ -182,8 +182,8 @@
         "The path splits at a weathered marker. Above: the climb, into the wind. Below: a cave mouth, dark and still."
       ],
       "choices": [
-        "The high route \u2014 climb over (Climbing favored)",
-        "The low route \u2014 through the caves"
+        "The high route — climb over (Climbing favored)",
+        "The low route — through the caves"
       ],
       "routes": [
         "mountain-high",
@@ -214,6 +214,43 @@
       "count": 2,
       "x": 3900,
       "blocking": false
+    },
+    {
+      "id": "mtn-oathstone",
+      "type": "adventure",
+      "x": 2200,
+      "speaker": "Oathstone",
+      "lines": [
+        "A standing stone, waist-high, worn smooth on its eastern face by generations of hands.",
+        "Names are scratched into it — hundreds, layered over each other. The custom is old: leave your name, swear to come back for it."
+      ],
+      "choices": [
+        "Carve your name and swear",
+        "Carve your name, swear nothing",
+        "Leave the stone unmarked"
+      ],
+      "responses": [
+        "The knife is blunt and the granite is hard and it takes a long time. That seems to be the point.",
+        "Your name goes on among the others. You make no promise you might not keep.",
+        "You put your palm flat against the cold face of it and move on."
+      ],
+      "outcomes": [
+        {
+          "mark": {
+            "oath": "sworn"
+          }
+        },
+        {
+          "mark": {
+            "oath": "named"
+          }
+        },
+        {
+          "mark": {
+            "oath": "none"
+          }
+        }
+      ]
     }
   ],
   "props": [

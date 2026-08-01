@@ -223,6 +223,60 @@
       "id": "high-relic-2",
       "type": "interest",
       "x": 4800
+    },
+    {
+      "id": "high-shepherd",
+      "type": "adventure",
+      "x": 4200,
+      "speaker": "Shepherd",
+      "lines": [
+        "Hoy! Off the ridge line — wind'll take you off it like a hat.",
+        "Nobody comes over the top in this season. They go under, through the dark, and pay the toll to whatever lives in it.",
+        "You came over the top. That's either courage or you've nobody left to be careful for."
+      ],
+      "choices": [
+        "I'm looking for my family",
+        "I took the safer road",
+        "Say nothing"
+      ],
+      "responses": [
+        "He is quiet a while. Then: a group came over this same ridge, before the snows. Worn thin. Asking after a child.",
+        "He laughs, once, into the wind. Safer. Aye. That's one word for the high road in winter.",
+        "He nods slowly, as if silence were the answer he expected, and points east with his crook."
+      ],
+      "outcomes": [
+        {
+          "mark": {
+            "family_sign": "high"
+          }
+        },
+        {},
+        {}
+      ]
+    },
+    {
+      "id": "high-relic-3",
+      "type": "interest",
+      "x": 6300,
+      "reward": {
+        "artifacts": 1,
+        "gold": 12
+      }
+    },
+    {
+      "id": "high-wolves",
+      "type": "creature",
+      "x": 5100,
+      "kind": "wolf",
+      "count": 2
+    },
+    {
+      "id": "high-bats-2",
+      "type": "creature",
+      "x": 6650,
+      "kind": "bat",
+      "count": 2,
+      "blocking": false
     }
   ],
   "exitEast": {

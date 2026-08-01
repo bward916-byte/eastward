@@ -92,6 +92,11 @@ async function boot() {
     if (e.key === 'm' || e.key === 'M') audio.toggleMute();
   });
 
+  // which control scheme to name in prompts
+  let usingTouch = false;
+  window.addEventListener('touchstart', () => { usingTouch = true; }, { passive: true });
+  window.addEventListener('keydown', () => { usingTouch = false; });
+
   const dayNight = new DayNightCycle();
   const wind = new WindSystem();
   const weather = new WeatherSystem();
@@ -429,6 +434,24 @@ async function boot() {
       levelFx.render(ctx, player.x, player.y);
       scene.intro?.renderWorld(ctx);
       player.render(ctx, alpha);
+
+      // Climb affordance (§3.3). Standing at a face you cannot walk up gives no
+      // feedback otherwise — the player just stops and, before the RUN fix,
+      // drained to nothing on the spot wondering why.
+      if (player.climbHint && !dialogue.blocking) {
+        const hx = player.x, hy = player.y - 104;
+        ctx.font = '13px "Trebuchet MS", sans-serif';
+        const label = usingTouch
+          ? 'Too steep to walk — hold the jump side to climb'
+          : 'Too steep to walk — hold ↑ with the direction to climb';
+        const w = ctx.measureText(label).width + 18;
+        ctx.fillStyle = 'rgba(12, 16, 10, 0.62)';
+        ctx.beginPath(); ctx.roundRect(hx - w / 2, hy - 13, w, 22, 10); ctx.fill();
+        ctx.fillStyle = 'rgba(240, 236, 214, 0.92)';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, hx, hy + 3);
+        ctx.textAlign = 'left';
+      }
       scene.parallax.renderForeground(ctx, camera);
       ctx.restore();
       if (scene.env.weather) weather.render(ctx, camera, wind.value);

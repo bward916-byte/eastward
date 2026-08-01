@@ -62,6 +62,9 @@ export class Player {
     this.stamina = STAMINA_MAX;
     this.endurance = ENDURANCE_MAX;
     this.fatigueTimer = 0;
+    this.pinnedByFace = false;
+    this._climbDir = 0;
+    this.climbHint = false;
     this.staggerTimer = 0;
     this._jumpHoldTime = 0;
     this._leaveGroundY = groundY;
@@ -211,28 +214,50 @@ export class Player {
     }
     const fatigued = this.fatigueTimer > 0;
 
+    // Pushing into a climb-tier face with no Up held: forward motion is zeroed
+    // further down, so this is running on the spot. Without this flag the
+    // player burns RUN stamina AND endurance for zero distance, drains to
+    // nothing at the foot of the hill, and then cannot start the climb at all
+    // (entry needs stamina > 1). That is the "stuck at the base of a hill with
+    // zero stamina, still in RUN" report.
+    this.pinnedByFace = this.grounded
+      && tierAhead === 'climb'
+      && wantDir === this.facing
+      && terrain.slopeAt(this.x + this.facing * 14) * this.facing > 0;
+    // surfaced for the HUD prompt — the climb input is otherwise undiscoverable
+    this.climbHint = this.pinnedByFace && !input.jumpHeld;
+
     // ---- state resolution ----
     if (this.staggerTimer > 0) {
       this.state = 'STAGGER';
     } else if (!this.grounded) {
       this.state = 'JUMP';
     } else if (this.state === 'CLIMB') {
-      const holding = input.jumpHeld && wantDir === ascendDir;
-      const faceAhead = terrain.tierAt(this.x + ascendDir * 16) === 'climb';
+      // Climb direction is LATCHED on entry. Recomputing it from the slope
+      // underfoot strands the player at the foot of a steep face that sits in a
+      // small basin: the face ahead rises east, the ground underfoot tilts
+      // west, so the hold test failed on the very next frame and the state
+      // oscillated CLIMB->WALK->RUN at ~15Hz without moving. (Meadow x~4300.)
+      const climbDir = this._climbDir || ascendDir;
+      const holding = input.jumpHeld && wantDir === climbDir;
+      const faceAhead = terrain.tierAt(this.x + climbDir * 16) === 'climb';
       if (absAng < CLIMB_MIN && !faceAhead) this.state = 'WALK'; // truly topped out
       else if (!holding || this.stamina <= 0.01) this.state = 'SLIDE'; // slip (§3.3)
     } else if (tierHere === 'climb') {
       const wantClimb = input.jumpHeld && wantDir === ascendDir;
-      this.state = (wantClimb && this.stamina > 1) ? 'CLIMB' : 'SLIDE';
+      if (wantClimb && this.stamina > 1) { this.state = 'CLIMB'; this._climbDir = ascendDir; }
+      else this.state = 'SLIDE';
     } else if (this.state === 'SLIDE') {
       this.state = 'WALK';                                   // slid onto safe ground
+      this._climbDir = 0;
     } else if (this.stamina <= 0.01 && this.endurance <= 0.01) {
       this.state = 'EXHAUSTED';
     } else if (wantDir === 0) {
       this.state = 'IDLE';
     } else if (fatigued) {
       this.state = 'WALK';
-    } else if (input.holdDuration > RUN_THRESHOLD && this.stamina > 0.01) {
+    } else if (input.holdDuration > RUN_THRESHOLD && this.stamina > 0.01
+               && !this.pinnedByFace) {
       this.state = 'RUN';
     } else {
       this.state = 'WALK';
@@ -244,14 +269,19 @@ export class Player {
       const faceAscends = terrain.slopeAt(this.x + this.facing * 14) * this.facing > 0;
       if (faceAscends && input.jumpHeld && wantDir === this.facing && this.stamina > 1) {
         this.state = 'CLIMB';
+        this._climbDir = this.facing;   // latch: the FACE decides, not the dip
       }
     }
 
     // ---- movement per state ----
     if (this.state === 'CLIMB') {
-      const grade = clamp((absAng - CLIMB_MIN) / (Math.PI / 2 - CLIMB_MIN), 0, 1);
+      const climbDir = this._climbDir || ascendDir;
+      // grade from the face being climbed, not a basin lip underfoot
+      const faceAng = Math.abs(terrain.slopeAt(this.x + climbDir * 14));
+      const useAng = Math.max(absAng, faceAng);
+      const grade = clamp((useAng - CLIMB_MIN) / (Math.PI / 2 - CLIMB_MIN), 0, 1);
       const speed = CLIMB_SPEED * this.climbSkill * (1 - grade * 0.45);
-      this.vx = ascendDir * speed * Math.cos(absAng);
+      this.vx = climbDir * speed * Math.cos(useAng);
       this.x += this.vx * dt;
       this.stamina -= CLIMB_DRAIN * (0.6 + grade) / this.climbSkill * dt;
     } else if (this.state === 'SLIDE') {
@@ -350,12 +380,20 @@ export class Player {
     if (this.state === 'RUN') {
       this.stamina -= RUN_DRAIN * dt;
       this.endurance = clamp(this.endurance - ENDURANCE_DRAIN * dt, 0, ENDURANCE_MAX);
-    } else if (this.state === 'WALK' || this.state === 'IDLE') {
+    } else if (this.state === 'WALK' || this.state === 'IDLE'
+               || this.state === 'EXHAUSTED') {
       let regen = STAMINA_REGEN * this._rig.regenMult;      // age curve (§5)
       if (this.hasInjury('bruise')) regen *= 0.6;           // §12
+      // EXHAUSTED recovers, slowly. It previously regenerated NOTHING, which
+      // made it an absorbing state: once stamina and endurance both hit zero
+      // the journey could not continue even by standing still indefinitely.
+      if (this.state === 'EXHAUSTED') regen *= 0.35;
       this.stamina += regen * dt;
-      if (this.state === 'IDLE') {
-        this.endurance = clamp(this.endurance + ENDURANCE_REGEN * dt, 0, ENDURANCE_MAX);
+      if (this.state === 'IDLE' || this.state === 'EXHAUSTED') {
+        // endurance is the ceiling on stamina, so it must climb back too or
+        // the ceiling stays at zero and the stamina regen above does nothing
+        const rate = this.state === 'EXHAUSTED' ? ENDURANCE_REGEN * 1.5 : ENDURANCE_REGEN;
+        this.endurance = clamp(this.endurance + rate * dt, 0, ENDURANCE_MAX);
       }
     }
     this.stamina = clamp(this.stamina, 0, this.staminaCeiling);

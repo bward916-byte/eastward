@@ -165,19 +165,24 @@ Desktop: ←→ walk (hold→run), ↑ jump (hold=higher; hold ↑+dir at a 45�
 - `?debug` — on-screen event log (button taps, interact ticks, demo telemetry per second).
 - `?new` — fresh journey.
 - Deploy: commit to `main`, Pages builds in ~30–60s. Check `GET /repos/bward916-byte/eastward/pages/builds/latest`. **The PAT used during development sits in chat history — revoke it and mint fresh ones as needed (repo scope).**
-- **`npm install && npm run smoke`** — boots the REAL game headlessly under jsdom (stubbed canvas + Web Audio, `fetch` serving `data/` from disk) and drives the rare transitions: resume from save, respawn after defeat, demo start/exit. Exits non-zero on failure, so it can gate a deploy. **Add a case whenever you add a transition.**
+- **`npm install && npm test`** runs both suites below.
+- **`npm run test:locomotion`** — module-level sim driving the real `Player` over real biome terrain: stamina/slope interaction, climb entry, and a sweep asserting every climb face in every free-roam biome is passable. This is what caught the meadow x≈4300 pin.
+- **`npm run smoke`** — boots the REAL game headlessly under jsdom (stubbed canvas + Web Audio, `fetch` serving `data/` from disk) and drives the rare transitions: resume from save, respawn after defeat, demo start/exit. Exits non-zero on failure, so it can gate a deploy. **Add a case whenever you add a transition.**
 - Module-level headless pattern (for systems work): `node --input-type=module` importing real modules with stubbed `performance/localStorage/location`, driving `Player`/`EncounterManager`/`Companion` with scripted inputs and asserting outcomes. Async dialogue flows need `await setImmediate` yields inside sim loops. This is how the horde balance numbers and the companion tracking fixes were measured.
 
 ## Lessons / Gotchas (read before editing)
 
-1. **The happy path is not the risk; the rare transitions are.** `restoreFromSnapshot` was CALLED in three places and DEFINED in none — respawn-after-defeat and demo-exit both threw `ReferenceError` in shipped builds, for months, because neither is on the path you walk while testing a change. `npm run smoke` exists to cover exactly this. It is also why balance was measured rather than eyeballed: companions animated and swung convincingly while landing zero blows.
-2. **Verify every automated text edit.** Python `str.replace` no-ops silently on needle mismatch; this shipped a build where attack/interact input was structurally dead for days (`InputManager` set edges nobody consumed). **Grep the file after patching, and prefer targeted `str_replace`-style edits with unique anchors.**
-3. Mobile event order: pointerdown fires before touchstart — anything a pointerdown closes must keep blocking the paired touchstart (`dialogue.blocking` grace).
-4. Never toggle `hidden`/`display` on tappable elements per frame (iOS tap drop). Use the `setVisible` class approach.
-5. Restores must run with saves suspended and complete BEFORE un-suspending — mid-restore ticks once checkpoint-saved aged demo state (the "age persists after refresh" bug).
-6. Landing must trigger on surface contact regardless of vertical velocity, or jumps into rising slopes sink-and-bounce.
-7. Anchor full-screen gradients to stable values (biome baseY), not per-frame sampled ones (the ravine flicker).
-8. The generative audio graph must be built once per biome with layers at gain 0 and toggled by ramp — never rebuild voices on state change.
+1. **Climb state must LATCH its direction on entry.** A steep face whose foot sits in a shallow basin reads as rising east from 14px ahead but tilting west underfoot. Recomputing `ascendDir` per-frame inside CLIMB failed the hold test immediately, oscillating CLIMB→WALK→RUN at ~15Hz with the player pinned in place (meadow x≈4300, just past the fallen tree). Terrain sampled *ahead* decides a climb; terrain underfoot does not.
+2. **Never let a state burn resources while movement is zeroed.** Pushing into a climb face zeroes `targetVx`, but RUN kept draining stamina AND endurance — the player drained to nothing at the foot of a hill and then could not meet the `stamina > 1` needed to start climbing. See `pinnedByFace`.
+3. **Check every state for an escape.** `EXHAUSTED` regenerated nothing, making it absorbing: stamina and endurance both at zero could never recover, even resting indefinitely.
+4. **The happy path is not the risk; the rare transitions are.** `restoreFromSnapshot` was CALLED in three places and DEFINED in none — respawn-after-defeat and demo-exit both threw `ReferenceError` in shipped builds, for months, because neither is on the path you walk while testing a change. `npm run smoke` exists to cover exactly this. It is also why balance was measured rather than eyeballed: companions animated and swung convincingly while landing zero blows.
+5. **Verify every automated text edit.** Python `str.replace` no-ops silently on needle mismatch; this shipped a build where attack/interact input was structurally dead for days (`InputManager` set edges nobody consumed). **Grep the file after patching, and prefer targeted `str_replace`-style edits with unique anchors.**
+6. Mobile event order: pointerdown fires before touchstart — anything a pointerdown closes must keep blocking the paired touchstart (`dialogue.blocking` grace).
+7. Never toggle `hidden`/`display` on tappable elements per frame (iOS tap drop). Use the `setVisible` class approach.
+8. Restores must run with saves suspended and complete BEFORE un-suspending — mid-restore ticks once checkpoint-saved aged demo state (the "age persists after refresh" bug).
+9. Landing must trigger on surface contact regardless of vertical velocity, or jumps into rising slopes sink-and-bounce.
+10. Anchor full-screen gradients to stable values (biome baseY), not per-frame sampled ones (the ravine flicker).
+11. The generative audio graph must be built once per biome with layers at gain 0 and toggled by ramp — never rebuild voices on state change.
 
 ## Roadmap (spec items not yet built)
 

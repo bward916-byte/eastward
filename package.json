@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "npm run test:locomotion && npm run smoke",
+    "test:locomotion": "node tools/locomotion.mjs",
     "smoke": "node tools/smoke.mjs",
     "serve": "python3 -m http.server 8000"
   },

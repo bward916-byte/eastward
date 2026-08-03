@@ -3,9 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "npm run test:locomotion && npm run test:journey && npm run smoke",
+    "test": "npm run test:locomotion && npm run test:journey && npm run test:viewport && npm run smoke",
     "test:locomotion": "node tools/locomotion.mjs",
     "test:journey": "node tools/journey.mjs",
+    "test:viewport": "node tools/viewport.mjs",
     "smoke": "node tools/smoke.mjs",
     "serve": "python3 -m http.server 8000"
   },

@@ -7,6 +7,7 @@ import { InputManager } from './core/InputManager.js';
 import { Camera } from './core/Camera.js';
 import { SaveManager } from './core/SaveManager.js';
 import { OrientationGate } from './core/OrientationGate.js';
+import { Viewport } from './core/Viewport.js';
 import { bus } from './core/EventBus.js';
 import { journal } from './core/Journal.js';
 import { Player } from './entities/Player.js';
@@ -58,14 +59,16 @@ async function boot() {
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
 
-  const camera = new Camera(window.innerWidth, window.innerHeight);
-  function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    camera.resize(canvas.width, canvas.height);
-  }
-  window.addEventListener('resize', resize);
-  resize();
+  // Viewport owns all sizing. It re-measures on a settle schedule after
+  // rotation because window.innerHeight is stale at the moment the orientation
+  // change is announced (§E) — reading it once left the HUD below the fold.
+  const camera = new Camera(1, 1);
+  const viewport = new Viewport((w, h) => {
+    canvas.width = w;
+    canvas.height = h;
+    camera.resize(w, h);
+  });
+  const resize = viewport.refresh;
 
   const classes = await fetch('data/classes.json').then(r => r.json());
   const manifest = await fetch('data/manifest.json').then(r => r.json());
@@ -591,7 +594,10 @@ async function boot() {
   }, 200);
 
   new OrientationGate((isLandscape) => {
-    if (isLandscape) { resize(); loop.start(); }
+    // refresh(), not a single measurement: the media query fires before the
+    // browser has laid out the new orientation
+    viewport.refresh();
+    if (isLandscape) loop.start();
     else loop.stop();
   });
 }

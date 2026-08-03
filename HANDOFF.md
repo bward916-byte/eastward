@@ -16,7 +16,7 @@ Playable end-to-end: **Intro (playable separation sequence) → Sunfall Meadow �
 
 ```
 index.html                 DOM shell: canvas, HUD bars, dialogue box, journey panel, demo UI
-styles/styles.css          page/canvas layout, orientation gate
+styles/styles.css          page/canvas layout (sized by --app-w/--app-h), orientation gate
 styles/hud.css             HUD, dialogue, buttons, panels, demo/biome labels
 data/manifest.json         biome + class ID tables (APPEND-ONLY — save codes index into it)
 data/classes.json          Thief / Wizard / Fighter definitions
@@ -29,6 +29,7 @@ src/core/EventBus.js       shared pub/sub (the signal spine — see list below)
 src/core/Journal.js        journey-wide decision memory + `requires` conditions
 src/core/SaveManager.js    checkpoint-only saves, buildSnapshot, suspended guard
 src/core/OrientationGate.js landscape requirement (Amendment 02 §E)
+src/core/Viewport.js      visualViewport sizing + rotation settle schedule
 src/core/utils.js          clamp/lerp/damp/lerpColor
 src/entities/Player.js     locomotion state machine, stamina/endurance, combat, injuries
 src/entities/PlayerRig.js  age keyframes → render params + age stat curve (§5, §F)
@@ -166,6 +167,7 @@ Desktop: ←→ walk (hold→run), ↑ jump (hold=higher; hold ↑+dir at a 45�
 - `?new` — fresh journey.
 - Deploy: commit to `main`, Pages builds in ~30–60s. Check `GET /repos/bward916-byte/eastward/pages/builds/latest`. **The PAT used during development sits in chat history — revoke it and mint fresh ones as needed (repo scope).**
 - **`npm install && npm test`** runs both suites below.
+- **`npm run test:viewport`** — rotation and viewport sizing, including an orientation event fired before dimensions update (the real mobile ordering).
 - **`npm run test:journey`** — walks a simulated player through every biome from spawn to exit, and audits the stamina cost of every authored climb face. Catches soft-locks that only appear when arriving tired.
 - **`npm run test:locomotion`** — module-level sim driving the real `Player` over real biome terrain: stamina/slope interaction, climb entry, and a sweep asserting every climb face in every free-roam biome is passable. This is what caught the meadow x≈4300 pin.
 - **`npm run smoke`** — boots the REAL game headlessly under jsdom (stubbed canvas + Web Audio, `fetch` serving `data/` from disk) and drives the rare transitions: resume from save, respawn after defeat, demo start/exit. Exits non-zero on failure, so it can gate a deploy. **Add a case whenever you add a transition.**
@@ -173,19 +175,20 @@ Desktop: ←→ walk (hold→run), ↑ jump (hold=higher; hold ↑+dir at a 45�
 
 ## Lessons / Gotchas (read before editing)
 
-1. **Locomotion bugs depend on the state you ARRIVE in.** The meadow — the FIRST biome — contained a soft-lock for the project's entire life: reaching the x≈4300 face already drained from the run, the player entered CLIMB, ran out partway up, slid to the foot, and repeated forever, since neither CLIMB nor SLIDE regenerated. Approached fresh and at rest the same face is fine, so no per-face test caught it. `npm run test:journey` walks each biome end to end, which is the only thing that reproduces it.
-2. **Never admit a player to a climb they cannot finish.** A flat entry threshold does not solve this — the meadow face costs 40 stamina, so any fixed floor below that still admits a doomed attempt. `Player.climbEntryCost()` integrates the real cost of the face ahead and gates entry on it. Authored faces must stay under ~75 stamina (asserted in the journey suite); above that a player arriving less than fresh can never pass.
-3. **Climb state must LATCH its direction on entry.** A steep face whose foot sits in a shallow basin reads as rising east from 14px ahead but tilting west underfoot. Recomputing `ascendDir` per-frame inside CLIMB failed the hold test immediately, oscillating CLIMB→WALK→RUN at ~15Hz with the player pinned in place (meadow x≈4300, just past the fallen tree). Terrain sampled *ahead* decides a climb; terrain underfoot does not.
-4. **Never let a state burn resources while movement is zeroed.** Pushing into a climb face zeroes `targetVx`, but RUN kept draining stamina AND endurance — the player drained to nothing at the foot of a hill and then could not meet the `stamina > 1` needed to start climbing. See `pinnedByFace`.
-5. **Check every state for an escape.** `EXHAUSTED` regenerated nothing, making it absorbing: stamina and endurance both at zero could never recover, even resting indefinitely.
-6. **The happy path is not the risk; the rare transitions are.** `restoreFromSnapshot` was CALLED in three places and DEFINED in none — respawn-after-defeat and demo-exit both threw `ReferenceError` in shipped builds, for months, because neither is on the path you walk while testing a change. `npm run smoke` exists to cover exactly this. It is also why balance was measured rather than eyeballed: companions animated and swung convincingly while landing zero blows.
-7. **Verify every automated text edit.** Python `str.replace` no-ops silently on needle mismatch; this shipped a build where attack/interact input was structurally dead for days (`InputManager` set edges nobody consumed). **Grep the file after patching, and prefer targeted `str_replace`-style edits with unique anchors.**
-8. Mobile event order: pointerdown fires before touchstart — anything a pointerdown closes must keep blocking the paired touchstart (`dialogue.blocking` grace).
-9. Never toggle `hidden`/`display` on tappable elements per frame (iOS tap drop). Use the `setVisible` class approach.
-10. Restores must run with saves suspended and complete BEFORE un-suspending — mid-restore ticks once checkpoint-saved aged demo state (the "age persists after refresh" bug).
-11. Landing must trigger on surface contact regardless of vertical velocity, or jumps into rising slopes sink-and-bounce.
-12. Anchor full-screen gradients to stable values (biome baseY), not per-frame sampled ones (the ravine flicker).
-13. The generative audio graph must be built once per biome with layers at gain 0 and toggled by ramp — never rebuild voices on state change.
+1. **Mobile lies about viewport size at the moment it announces a rotation.** The `(orientation: landscape)` media query and `orientationchange` both fire BEFORE layout settles; `window.innerHeight` and `100dvh` keep reporting the old portrait height for up to several hundred ms. Sizing from a single reading left `#game-root` at the portrait height after rotating to landscape, so `#hud` (anchored `bottom: 0`) sat far below the fold and was clipped by `overflow: hidden` — the bottom bar simply vanished. `src/core/Viewport.js` measures from `visualViewport`, publishes `--app-w`/`--app-h` for the layout to use instead of dvh, and **re-measures on a settle schedule** (rAF + 0/60/160/320/600ms) after any event that could have changed it. Never trust one reading.
+2. **Locomotion bugs depend on the state you ARRIVE in.** The meadow — the FIRST biome — contained a soft-lock for the project's entire life: reaching the x≈4300 face already drained from the run, the player entered CLIMB, ran out partway up, slid to the foot, and repeated forever, since neither CLIMB nor SLIDE regenerated. Approached fresh and at rest the same face is fine, so no per-face test caught it. `npm run test:journey` walks each biome end to end, which is the only thing that reproduces it.
+3. **Never admit a player to a climb they cannot finish.** A flat entry threshold does not solve this — the meadow face costs 40 stamina, so any fixed floor below that still admits a doomed attempt. `Player.climbEntryCost()` integrates the real cost of the face ahead and gates entry on it. Authored faces must stay under ~75 stamina (asserted in the journey suite); above that a player arriving less than fresh can never pass.
+4. **Climb state must LATCH its direction on entry.** A steep face whose foot sits in a shallow basin reads as rising east from 14px ahead but tilting west underfoot. Recomputing `ascendDir` per-frame inside CLIMB failed the hold test immediately, oscillating CLIMB→WALK→RUN at ~15Hz with the player pinned in place (meadow x≈4300, just past the fallen tree). Terrain sampled *ahead* decides a climb; terrain underfoot does not.
+5. **Never let a state burn resources while movement is zeroed.** Pushing into a climb face zeroes `targetVx`, but RUN kept draining stamina AND endurance — the player drained to nothing at the foot of a hill and then could not meet the `stamina > 1` needed to start climbing. See `pinnedByFace`.
+6. **Check every state for an escape.** `EXHAUSTED` regenerated nothing, making it absorbing: stamina and endurance both at zero could never recover, even resting indefinitely.
+7. **The happy path is not the risk; the rare transitions are.** `restoreFromSnapshot` was CALLED in three places and DEFINED in none — respawn-after-defeat and demo-exit both threw `ReferenceError` in shipped builds, for months, because neither is on the path you walk while testing a change. `npm run smoke` exists to cover exactly this. It is also why balance was measured rather than eyeballed: companions animated and swung convincingly while landing zero blows.
+8. **Verify every automated text edit.** Python `str.replace` no-ops silently on needle mismatch; this shipped a build where attack/interact input was structurally dead for days (`InputManager` set edges nobody consumed). **Grep the file after patching, and prefer targeted `str_replace`-style edits with unique anchors.**
+9. Mobile event order: pointerdown fires before touchstart — anything a pointerdown closes must keep blocking the paired touchstart (`dialogue.blocking` grace).
+10. Never toggle `hidden`/`display` on tappable elements per frame (iOS tap drop). Use the `setVisible` class approach.
+11. Restores must run with saves suspended and complete BEFORE un-suspending — mid-restore ticks once checkpoint-saved aged demo state (the "age persists after refresh" bug).
+12. Landing must trigger on surface contact regardless of vertical velocity, or jumps into rising slopes sink-and-bounce.
+13. Anchor full-screen gradients to stable values (biome baseY), not per-frame sampled ones (the ravine flicker).
+14. The generative audio graph must be built once per biome with layers at gain 0 and toggled by ramp — never rebuild voices on state change.
 
 ## Roadmap (spec items not yet built)
 

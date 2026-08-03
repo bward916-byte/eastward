@@ -38,7 +38,14 @@ export class InputManager {
       if ([...LEFT, ...RIGHT, ...UP, ...DOWN].includes(e.key)) e.preventDefault();
     });
     target.addEventListener('keyup', (e) => this._setKey(e.key, false));
-    window.addEventListener('blur', () => { this._keys.clear(); });
+    // Any of these can happen with keys/touches still logically "down".
+    // Without clearing, the last held direction sticks and the player runs
+    // forever with nothing on the screen.
+    window.addEventListener('blur', () => this.clearAll());
+    window.addEventListener('pagehide', () => this.clearAll());
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this.clearAll();
+    });
 
     this._bindTouch();
   }
@@ -82,7 +89,13 @@ export class InputManager {
         else if (dx < -12) this._keys.add('left');
       }
     }, { passive: true });
-    window.addEventListener('touchend', (e) => {
+    // touchend AND touchcancel. Mobile browsers fire touchcancel instead of
+    // touchend whenever something interrupts the gesture — including the DOM
+    // under the finger changing, which is exactly what happens when an
+    // encounter opens the dialogue box mid-drag. Handling only touchend left
+    // the direction key latched on: the player kept running, at full speed,
+    // with nothing touching the screen, until they dragged and released again.
+    const endTouch = (e) => {
       for (const t of e.changedTouches) {
         if (t.identifier === moveTouchId) {
           moveTouchId = null;
@@ -91,7 +104,15 @@ export class InputManager {
           this._keys.delete('up');
         }
       }
-    }, { passive: true });
+      // Belt and braces: if nothing is touching the screen, nothing is held.
+      // Guards against a missed/duplicated identifier leaving a key latched.
+      if (e.touches && e.touches.length === 0) {
+        moveTouchId = null;
+        this.clearAll();
+      }
+    };
+    window.addEventListener('touchend', endTouch, { passive: true });
+    window.addEventListener('touchcancel', endTouch, { passive: true });
   }
 
   /** Call once per fixed update, before the player reads intents. */
@@ -112,6 +133,24 @@ export class InputManager {
     this._attackEdge = false;
     this.interactPressed = this._interactEdge;
     this._interactEdge = false;
+  }
+
+  /** Drop every held key/touch. Safe to call at any time. */
+  clearAll() {
+    this._keys.clear();
+    this.moveDir = 0;
+    this.holdDuration = 0;
+    this.jumpHeld = false;
+  }
+
+  /** Movement only — used when a dialogue takes over so a held drag cannot
+   *  carry through the interaction and resume as a run afterwards. */
+  clearMovement() {
+    this._keys.delete('left');
+    this._keys.delete('right');
+    this._keys.delete('down');
+    this.moveDir = 0;
+    this.holdDuration = 0;
   }
 
   /** Touch/UI button hooks. */

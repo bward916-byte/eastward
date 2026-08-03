@@ -334,10 +334,17 @@ async function boot() {
   });
 
   let worldTime = 0;
+  let wasBlocking = false;
   let audioSync = 0;
   const loop = new GameLoop(
     (dt) => {
       worldTime += dt;
+      // A dialogue taking over must not leave a held direction latched: touch
+      // input is suppressed while it is open, so a drag held at the moment it
+      // opened would otherwise survive the whole interaction and resume as a
+      // run the instant it closes.
+      if (dialogue.blocking && !wasBlocking) input.clearMovement();
+      wasBlocking = dialogue.blocking;
       input.update(dt);
       demo.update(dt);
       const inp = demo.active ? demo.scriptInput : input;

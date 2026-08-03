@@ -16,6 +16,7 @@ import { Companion, COMPANIONS } from './entities/Companion.js';
 import { TerrainSpline } from './world/TerrainSpline.js';
 import { IntroTerrain } from './world/IntroTerrain.js';
 import { IntroSequence } from './world/IntroSequence.js';
+import { EndingSequence } from './world/EndingSequence.js';
 import { Checkpoint } from './world/Checkpoint.js';
 import { DayNightCycle, DAY_SECONDS } from './world/DayNightCycle.js';
 import { WindSystem } from './world/WindSystem.js';
@@ -155,6 +156,7 @@ async function boot() {
     const biome = await fetchBiome(id);
     let terrain, intro = null;
 
+    let ending = null;
     if (id === 'intro') {
       terrain = new IntroTerrain(biome);
       const guardian = new Guardian(spawnX + 90, terrain);
@@ -162,6 +164,9 @@ async function boot() {
       intro.onComplete = () => loadScene('meadow', 100);
     } else {
       terrain = new TerrainSpline(biome);
+      if (biome.journeyEnd) {
+        ending = new EndingSequence(player, terrain, dialogue, camera, journal);
+      }
     }
 
     const checkpoints = (biome.checkpoints ?? []).map(d => new Checkpoint(d, terrain));
@@ -195,7 +200,10 @@ async function boot() {
       props: new WorldProps(biome, terrain),
       wildlife: new AmbientWildlife(biome, terrain),
       party: [],
+      ending,
     };
+    // the journey's edge marker means "the road goes on" — wrong at the ending
+    if (ending) scene.encounters.showEdgeMarker = false;
     if (id !== 'intro') {
       journal.friends().forEach((fid, i) => {
         const c = new Companion(fid, spawnX, terrain, i);
@@ -384,6 +392,7 @@ async function boot() {
 
       player.update(dt, inp, scene.terrain);
       scene.intro?.update(dt);
+      scene.ending?.update(dt);
       if (!scene.intro) {
         scene.encounters.update(dt, inp);
         if (inp.interactPressed) dbg(`interact tick near=${!!(scene.town?.nearService || scene.encounters.nearInteractable)} blk=${dialogue.blocking}`);
@@ -399,7 +408,10 @@ async function boot() {
       }
       for (const cp of scene.checkpoints) cp.update(dt, player);
       scene.wildlife.update(dt, player);
-      for (const c of scene.party) c.update(dt, player, scene.encounters.creatures, projectiles);
+      // the party stops at the rise and the last stretch is walked alone (§2)
+      if (!scene.ending?.holdingParty) {
+        for (const c of scene.party) c.update(dt, player, scene.encounters.creatures, projectiles);
+      }
       camera.update(dt, player);
       scene.parallax.update(dt);
       ambient.update(dt, player);
@@ -436,6 +448,7 @@ async function boot() {
       for (const pr of projectiles) pr.render(ctx);
       levelFx.render(ctx, player.x, player.y);
       scene.intro?.renderWorld(ctx);
+      scene.ending?.renderWorld(ctx);
       player.render(ctx, alpha);
 
       // Climb affordance (§3.3). Standing at a face you cannot walk up gives no
@@ -481,6 +494,7 @@ async function boot() {
       }
       if (scene.env.dayNight) dayNight.renderOverlay(ctx, camera);
       scene.intro?.renderOverlay(ctx, camera);
+      scene.ending?.renderOverlay(ctx, camera);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       hud.update(player);
     }

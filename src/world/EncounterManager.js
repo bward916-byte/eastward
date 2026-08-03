@@ -18,6 +18,7 @@ const PUSH_DRAIN = 13;      // stamina/s while pushing
 export class EncounterManager {
   constructor(defs, terrain, player, dialogue, endX = null) {
     this.endX = endX;
+    this.showEdgeMarker = true;   // false at the journey's true end (§2)
     this.terrain = terrain;
     this.player = player;
     this.dialogue = dialogue;
@@ -342,7 +343,7 @@ export class EncounterManager {
       if (e.sparkle > 0) this._renderSparkle(ctx, e, time);
     }
     for (const c of this.creatures) c.render(ctx);
-    if (this.endX != null) this._renderEdge(ctx, time);
+    if (this.endX != null && this.showEdgeMarker) this._renderEdge(ctx, time);
   }
 
   _renderEdge(ctx, time) {

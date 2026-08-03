@@ -45,6 +45,7 @@ src/systems/UpgradeResolver.js applies level-up grants incl. aging nudge (§U.3)
 src/world/TerrainSpline.js authored points → smoothstep ground, slope tiers, snow depth
 src/world/IntroTerrain.js  intro overrides (bridge surface, tutorial log)
 src/world/IntroSequence.js scripted intro beats (flight/collapse/farewell/tutorial)
+src/world/EndingSequence.js the reunion (§2) — state-dependent, at the low fires
 src/world/Checkpoint.js    cairn/shrine/campfire markers → checkpointReached
 src/world/DayNightCycle.js 10-min days, light/dusk curves, night grade overlay
 src/world/WindSystem.js    signed wind value, gusts, speedModFor (§3.6)
@@ -119,9 +120,22 @@ is down. Past wave 1 a third of each wave spawns BEHIND the player. Escalation i
 monotonic on every route: 6 → 9 → 12 → (19 high | 21 cave) → 26 → 35.
 Events: `hordeStarted`, `hordeWave`, `hordeCleared`.
 
+**The ending (§2).** A biome flagged `journeyEnd: true` builds an `EndingSequence`
+alongside the scene (same beat-driven shape as `IntroSequence`). It halts the
+party at the rise so the last stretch is walked alone, then plays a reunion
+whose every line is chosen from live state: life stage from the aging clock,
+who is in the party, and Journal marks (`kindness`, `oath`, `corran`,
+`hordes_cleared`). It closes on an epilogue card summarising the road, and emits
+`journeyComplete`. `encounters.showEdgeMarker = false` suppresses the "road goes
+on" signpost, which is the wrong promise here.
+
+**Age units matter:** `PlayerRig` keyframes run Child at `ageDays` 0 to Elder at
+`ageDays` 20 — a whole life in ~20 in-game days, NOT a real day count. Feeding
+it anything larger pins every run to Elder.
+
 **EventBus signals** (the wiring spine): `checkpointReached`, `forceSave`, `gameSaved`, `enteredTown`, `leftTown`, `challengeApproaching`, `challengePassed`, `combatStarted`, `combatEnded`, `creatureSlain`, `interestCollected`, `adventureResolved`, `riteCompleted`, `branchChosen`,
 `companionJoined`, `companionLeft`, `companionDowned`, `companionRecovered`,
-`companionHealed`, `hordeStarted`, `hordeWave`, `hordeCleared`, `weatherChanged`, `biomeTransition`, `introComplete`, `xpGained`, `levelUp`, `upgradeGranted`, `ageStageChanged`, `injuryGained`, `injuryHealed`, `playerDefeated`, `artifactsIdentified`, `goldChanged`. Music, saves, XP, and notifications all subscribe rather than being called.
+`companionHealed`, `hordeStarted`, `hordeWave`, `hordeCleared`, `journeyComplete`, `weatherChanged`, `biomeTransition`, `introComplete`, `xpGained`, `levelUp`, `upgradeGranted`, `ageStageChanged`, `injuryGained`, `injuryHealed`, `playerDefeated`, `artifactsIdentified`, `goldChanged`. Music, saves, XP, and notifications all subscribe rather than being called.
 
 ## Biome JSON Schema (everything is authored here)
 
@@ -167,6 +181,7 @@ Desktop: ←→ walk (hold→run), ↑ jump (hold=higher; hold ↑+dir at a 45�
 - `?new` — fresh journey.
 - Deploy: commit to `main`, Pages builds in ~30–60s. Check `GET /repos/bward916-byte/eastward/pages/builds/latest`. **The PAT used during development sits in chat history — revoke it and mint fresh ones as needed (repo scope).**
 - **`npm install && npm test`** runs both suites below.
+- **`npm run test:ending`** — plays the reunion from four life stages and asserts it reads differently per journey state.
 - **`npm run test:viewport`** — rotation and viewport sizing, including an orientation event fired before dimensions update (the real mobile ordering).
 - **`npm run test:journey`** — walks a simulated player through every biome from spawn to exit, and audits the stamina cost of every authored climb face. Catches soft-locks that only appear when arriving tired.
 - **`npm run test:locomotion`** — module-level sim driving the real `Player` over real biome terrain: stamina/slope interaction, climb entry, and a sweep asserting every climb face in every free-roam biome is passable. This is what caught the meadow x≈4300 pin.
@@ -192,4 +207,4 @@ Desktop: ←→ walk (hold→run), ↑ jump (hold=higher; hold ↑+dir at a 45�
 
 ## Roadmap (spec items not yet built)
 
-Mounts (§9 — suits the longer roads and run-from-danger combat), the Mercenary Post (§11 / Amendment 01 §B — the `Companion` entity now exists; a hireable second one is mostly data), building interiors (Amendment 06 §N), hordes (§P — auto-combat already frames run-vs-fight), more flying enemies (§Q), Wizard Burn spell (§M.4), snowshoes shop item (§M.3), remaining trainer skills & Blacksmith/equipment (§7/§10), recorded audio stems (swap voice construction inside `BiomeMusic` only — layer/crossfade API stays), a title screen, further biomes (author JSON + one `exitEast` line), and the reunion ending (§2).
+Mounts (§9 — suits the longer roads and run-from-danger combat), the Mercenary Post (§11 / Amendment 01 §B — the `Companion` entity now exists; a hireable second one is mostly data), building interiors (Amendment 06 §N), hordes (§P — auto-combat already frames run-vs-fight), more flying enemies (§Q), Wizard Burn spell (§M.4), snowshoes shop item (§M.3), remaining trainer skills & Blacksmith/equipment (§7/§10), recorded audio stems (swap voice construction inside `BiomeMusic` only — layer/crossfade API stays), a title screen, further biomes (author JSON + one `exitEast` line).

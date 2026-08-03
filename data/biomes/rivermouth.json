@@ -331,5 +331,6 @@
       ]
     }
   ],
-  "endX": 6900
+  "endX": 6960,
+  "journeyEnd": true
 }

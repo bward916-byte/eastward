@@ -133,6 +133,46 @@ check('roster panel renders the party', /Mira/.test(roster) && /Corran/.test(ros
 window.document.getElementById('journey-close')
   .dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
 
+// Party strip: companions have health and a downed state, and the world render
+// alone cannot tell you who is on the ground mid-fight.
+{
+  const strip = window.document.getElementById('party-strip');
+  const names = [...strip.querySelectorAll('.pty-name')].map((n) => n.textContent);
+  check('party strip lists the party', names.join(',') === 'Mira,Corran,Bram,Sela',
+    names.join(','));
+
+  const { HudRenderer } = await import('../src/render/HudRenderer.js');
+  const hud = new HudRenderer();
+  const roster = [
+    { id: 'mira', name: 'Mira', health: 130, maxHealth: 130, downed: false },
+    { id: 'corran', name: 'Corran', health: 60, maxHealth: 240, downed: false },
+    { id: 'bram', name: 'Bram', health: 0, maxHealth: 150, downed: true },
+  ];
+  hud.updateParty(roster);
+  hud.updateParty(roster);                       // idempotent
+  const pips = [...strip.querySelectorAll('.pty')];
+  check('a pip per companion', pips.length === 3, `${pips.length}`);
+  check('a hurt companion is flagged', pips[1].classList.contains('bad')
+    || pips[1].classList.contains('hurt'), pips[1].className);
+  check('a downed companion is flagged', pips[2].classList.contains('down'),
+    pips[2].className);
+  check('health drives the bar width',
+    pips[0].querySelector('.pty-fill').style.width === '100%',
+    pips[0].querySelector('.pty-fill').style.width);
+
+  // recovering clears the flag without rebuilding the DOM
+  const before = strip.querySelector('.pty');
+  roster[2].downed = false; roster[2].health = 90;
+  hud.updateParty(roster);
+  check('recovery clears the downed flag', !pips[2].classList.contains('down'));
+  check('the strip is not rebuilt every update', strip.querySelector('.pty') === before);
+
+  // roster changes DO rebuild
+  hud.updateParty(roster.slice(0, 2));
+  check('roster change rebuilds the strip',
+    strip.querySelectorAll('.pty').length === 2);
+}
+
 // respawn after defeat — previously threw ReferenceError
 let mark = errors.length;
 bus.emit('playerDefeated', {});

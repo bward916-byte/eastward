@@ -55,7 +55,7 @@ src/world/Town.js          town zone, entry autosave, Inn/Trainer/Sage/Merchant/
 src/world/WorldProps.js    deterministic decor (rock/stump/mushroom/crystal/deadtree/flowers)
 src/world/AmbientWildlife.js birds + rabbits that flush when approached
 src/render/ParallaxRenderer.js 6-layer stack, cycle-aware sky, wind-scaled sway
-src/render/HudRenderer.js  bars, portrait limb overlays, counters, save flash
+src/render/HudRenderer.js  bars, portrait limb overlays, counters, save flash, party strip
 src/render/LevelUpNotification.js burst + label on upgradeGranted/ageStageChanged
 src/audio/AudioEngine.js   context + master/music/ambient buses, gesture unlock, M mute
 src/audio/MusicManager.js  GENERATIVE per-biome layered stems + stings + crossfades
@@ -100,7 +100,12 @@ Journal mark `party`; `scene.party` is rebuilt from it on every scene load.
 
 Companions have HP and a **downed** state rather than death — a permanent loss
 mid-journey would desync the live party from the Journal roster. Downed friends
-stop fighting and stop drawing aggro, then get back up at 60% health.
+stop fighting and stop drawing aggro, then get back up at 60% health. The HUD
+party strip (`HudRenderer.updateParty`) shows each companion's health and marks
+the fallen; a late horde produces ~10–17 downs, so this is not a rare state and
+the world render alone cannot show it — the fallen sprite is behind you, under
+the pile. The strip rebuilds its DOM only when the ROSTER changes, never
+per-frame (see the iOS tap-drop gotcha).
 
 Two non-obvious things hold this together, both found by simulation:
 - Melee companions must close ON the threat, not merely tighten formation.

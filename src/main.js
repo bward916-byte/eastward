@@ -504,6 +504,7 @@ async function boot() {
       scene.ending?.renderOverlay(ctx, camera);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       hud.update(player);
+      hud.updateParty(scene?.party ?? []);
     }
   );
 
@@ -606,6 +607,8 @@ async function boot() {
       : `${count} ${count > 1 ? kind + 's' : kind}`;
     showHorde(`Wave ${wave} of ${of} — ${what}`);
   });
+  bus.on('companionDowned', ({ name }) => showHorde(`${name} is down`, 2000));
+  bus.on('companionRecovered', ({ name }) => showHorde(`${name} is back up`, 1800));
   bus.on('hordeCleared', () => {
     journal.mark('hordes_cleared', Number(journal.get('hordes_cleared', 0)) + 1);
     showHorde('The road is clear.', 2200);

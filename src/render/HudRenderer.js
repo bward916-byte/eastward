@@ -21,6 +21,51 @@ export class HudRenderer {
     this.xpProgress = 0;
     this.artifactCount = document.getElementById('artifact-count');
     this._saveTimer = null;
+    this.partyStrip = document.getElementById('party-strip');
+    this._partyKey = '';        // roster signature — rebuild DOM only on change
+    this._pips = new Map();
+  }
+
+  /**
+   * Party strip (§11). Companions have health and a downed state, and mid-horde
+   * you cannot tell who is on the ground from the world render alone — the
+   * fallen sprite is behind you, under a pile of wolves.
+   *
+   * The DOM is rebuilt only when the roster itself changes. Per-frame rebuilds
+   * churn elements, which iOS punishes (see the tap-drop gotcha); everything
+   * that changes every frame is a width or a class.
+   */
+  updateParty(party = []) {
+    if (!this.partyStrip) return;
+    const key = party.map((c) => c.id).join(',');
+    if (key !== this._partyKey) {
+      this._partyKey = key;
+      this._pips.clear();
+      this.partyStrip.innerHTML = '';
+      for (const c of party) {
+        const el = document.createElement('div');
+        el.className = 'pty';
+        el.innerHTML = `<span class="pty-name">${c.name}</span>`
+          + '<span class="pty-bar"><span class="pty-fill"></span></span>';
+        this.partyStrip.appendChild(el);
+        this._pips.set(c.id, { el, fill: el.querySelector('.pty-fill'), wasDown: false });
+      }
+    }
+    for (const c of party) {
+      const pip = this._pips.get(c.id);
+      if (!pip) continue;
+      const frac = Math.max(0, Math.min(1, (c.health ?? 0) / (c.maxHealth || 1)));
+      pip.fill.style.width = `${frac * 100}%`;
+      pip.el.classList.toggle('down', !!c.downed);
+      pip.el.classList.toggle('bad', !c.downed && frac <= 0.3);
+      pip.el.classList.toggle('hurt', !c.downed && frac > 0.3 && frac <= 0.65);
+      if (!!c.downed !== pip.wasDown) {
+        pip.wasDown = !!c.downed;
+        pip.el.classList.remove('pulse');
+        void pip.el.offsetWidth;          // restart the animation
+        pip.el.classList.add('pulse');
+      }
+    }
   }
 
   /** Small unobtrusive confirmation on checkpoint save (Amendment 01 §A.2). */

@@ -448,3 +448,58 @@
 .roster-name { font-weight: 600; }
 .roster-role { font-size: 0.84em; opacity: 0.72; text-align: right; }
 .jp-deed { margin: 3px 0; font-size: 0.88em; opacity: 0.82; }
+
+
+/* --- Party strip: who is with you, and who is down (§11) --- */
+#party-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  margin-right: 8px;
+}
+#party-strip:empty { display: none; }
+
+.pty {
+  width: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: opacity 220ms ease;
+}
+.pty-name {
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: #d8caa8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+}
+.pty-bar {
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.pty-fill {
+  height: 100%;
+  width: 100%;
+  background: #7fae6a;
+  transition: width 180ms linear, background-color 220ms ease;
+}
+.pty.hurt .pty-fill { background: #c9a03c; }
+.pty.bad  .pty-fill { background: #c4553a; }
+
+/* Down: greyed and struck through — must read instantly mid-fight */
+.pty.down { opacity: 0.42; }
+.pty.down .pty-name { color: #9a9a9a; text-decoration: line-through; }
+.pty.down .pty-fill { background: #6a6a6a; }
+
+/* brief pulse when someone falls or gets back up */
+@keyframes ptyPulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+.pty.pulse { animation: ptyPulse 460ms ease; }

@@ -142,17 +142,32 @@ check('party survives respawn',
   journal.friends().join(',') === 'mira,corran,bram,sela',
   journal.friends().join(','));
 
-// demo tour start → exit, which also restores through the same path
+// The demo tour. Every stop is driven, not just the first — the tour stages
+// party members and biome transitions, so a broken late stop would otherwise
+// ship unnoticed. Exiting must leave the player's own journey untouched.
 mark = errors.length;
 const demoBtn = window.document.getElementById('demo-btn');
 if (demoBtn && !demoBtn.hidden) {
-  demoBtn.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+  const tap = (id) => window.document.getElementById(id)
+    ?.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+
+  tap('demo-btn');
+  await settle(1500);
+  const dots = window.document.getElementById('demo-dots').children.length;
+  check('demo tour starts', errors.length === mark && dots > 0, `${dots} stops`);
+
+  // step through every stop; 400ms between taps clears the 350ms tap dedupe
+  for (let i = 0; i < dots + 1; i++) {
+    tap('demo-skip');
+    await settle(700);
+  }
+  check('every demo stop runs without error', errors.length === mark,
+    errors.slice(mark).join(' | '));
+
+  tap('demo-exit');
   await settle(2500);
-  window.document.getElementById('demo-exit')
-    .dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
-  await settle(2500);
-  check('demo tour start and exit', errors.length === mark, errors.slice(mark).join(' | '));
-  check('party survives the demo',
+  check('demo tour exits cleanly', errors.length === mark, errors.slice(mark).join(' | '));
+  check("the tour's staged party does not leak into the journey",
     journal.friends().join(',') === 'mira,corran,bram,sela',
     journal.friends().join(','));
 } else {

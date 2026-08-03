@@ -173,7 +173,20 @@ Desktop: ←→ walk (hold→run), ↑ jump (hold=higher; hold ↑+dir at a 45�
 
 ## Demo Mode
 
-▶ Demo (top-right) — hide by setting `const SHOW_DEMO = false` in `src/main.js`. 11 scripted stops (~2.5 min) driving real systems via input override: locomotion, climbing, forced weather, day/night timelapse, full Child→Elder aging sweep, auto-combat, Hearthstead, Deepwood, blizzard climb, cave TK+bats, Far Slopes finale. Captures live state at start and resumes it exactly; saves suspended throughout; Next ▸ / ✕ Exit; 8s load watchdog.
+▶ Demo (top-right) — hide by setting `const SHOW_DEMO = false` in `src/main.js`.
+**13 scripted stops (~3.3 min)** driving real systems via input override:
+locomotion, terrain tiers, forced weather, day/night timelapse, the full
+Child→Elder aging sweep, auto-combat, Hearthstead, biome chaining, blizzard
+climb, cave TK + bats, **the party and its five roles, a horde with waves
+arriving front and back, and the reunion at the low fires**. Captures live state
+at start and resumes it exactly; saves suspended throughout; Next ▸ / ✕ Exit;
+8s load watchdog.
+
+Stops that stage state (the party ones call `giveParty()`) rely on exit
+restoring the snapshot — the smoke suite asserts the tour's party does not leak
+into the player's own journey. **When you add a feature, add a stop**: the tour
+is the only place the whole game is shown at once, and it silently fell three
+systems behind before anyone noticed.
 
 ## Debug & Ops
 

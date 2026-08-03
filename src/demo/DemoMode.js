@@ -7,6 +7,15 @@
 const RUN = { moveDir: 1, jumpPressed: false, jumpHeld: false, interactPressed: false, attackPressed: false, crouch: false };
 const IDLE = { ...RUN, moveDir: 0 };
 
+import { bus } from '../core/EventBus.js';
+import { journal } from '../core/Journal.js';
+
+/** Stage a party for the tour. Restored on exit with the rest of the snapshot. */
+function giveParty(ids) {
+  journal.mark('party', '');
+  for (const id of ids) bus.emit('companionJoined', { id });
+}
+
 const STOPS = [
   {
     caption: 'EASTWARD — the feature tour. (You resume right where you left off.) Walk · Run · Jump.',
@@ -83,10 +92,46 @@ const STOPS = [
     script: () => RUN,
   },
   {
-    caption: 'Somewhere east, a family waits.   — EASTWARD',
-    biome: 'mountain-east', x: 900, duration: 11,
-    setup: (d) => { d.weather.force('clear'); d.dayNight.phase = 0.68; },
-    script: (t) => (t < 7 ? { ...RUN } : IDLE),
+    caption: 'You gather people. A scout, a shield, a spear, a bow, a healer — each fights differently, and each is met on the road.',
+    biome: 'forest', x: 1200, duration: 14,
+    setup: (d) => {
+      d.weather.force('clear');
+      d.dayNight.phase = 0.35;
+      d.player.ageDays = 6;
+      giveParty(['mira', 'corran', 'bram', 'sela', 'tolm']);
+    },
+    script: (t) => (t % 5 < 3.4 ? { ...RUN } : IDLE),
+  },
+  {
+    caption: 'And the roads get worse. Hordes come in waves, from ahead and behind — walking east alone stops being survivable.',
+    biome: 'rivermouth', x: 5680, duration: 22,
+    setup: (d) => {
+      d.player.applyClass('fighter', d.classes.fighter);
+      d.player.skills.accuracy = 2.2; d.player.skills.fightSpeed = 1.8;
+      d.player.skills.autoDodge = 1.4; d.player.ageDays = 7;
+      d.weather.force('clear'); d.dayNight.phase = 0.72;
+      giveParty(['mira', 'corran', 'bram', 'sela', 'tolm', 'fen']);
+    },
+    tick: (d) => {
+      d.player.health = d.player.maxHealth;      // the tour never loses
+      d.player.stamina = Math.max(d.player.stamina, 45);
+    },
+    script: (t, player) => ({
+      ...RUN,
+      moveDir: player.x > 5900 ? (t % 2.4 < 1.5 ? 1 : -1) : 1,
+    }),
+  },
+  {
+    caption: 'And at the end of it, the low fires — where what the road cost you is finally counted.   — EASTWARD',
+    biome: 'rivermouth', x: 6420, duration: 26,
+    setup: (d) => {
+      d.weather.force('clear');
+      d.dayNight.phase = 0.72;
+      d.player.ageDays = 21;                     // an elder arrives; the scene reads differently
+      giveParty(['mira', 'corran', 'bram', 'sela', 'fen']);
+    },
+    tick: (d) => { d.player.health = d.player.maxHealth; },
+    script: (t, player) => (player.x < 6800 ? { ...RUN } : IDLE),
   },
 ];
 

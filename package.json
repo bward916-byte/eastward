@@ -3,10 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "npm run test:input && npm run test:locomotion && npm run test:journey && npm run test:viewport && npm run test:ending && npm run smoke",
+    "test": "npm run test:input && npm run test:locomotion && npm run test:journey && npm run test:passage && npm run test:viewport && npm run test:ending && npm run smoke",
     "test:input": "node tools/input.mjs",
     "test:locomotion": "node tools/locomotion.mjs",
     "test:journey": "node tools/journey.mjs",
+    "test:passage": "node tools/passage.mjs",
     "test:viewport": "node tools/viewport.mjs",
     "test:ending": "node tools/ending.mjs",
     "smoke": "node tools/smoke.mjs",

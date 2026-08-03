@@ -273,35 +273,67 @@
       "x": 5900,
       "waves": [
         {
-          "kind": "wolf",
-          "count": 5
+          "groups": [
+            {
+              "kind": "wolf",
+              "count": 5
+            }
+          ]
         },
         {
-          "kind": "boar",
-          "count": 4,
+          "groups": [
+            {
+              "kind": "boar",
+              "count": 4
+            }
+          ],
           "delay": 1.8
         },
         {
-          "kind": "bat",
-          "count": 6,
+          "groups": [
+            {
+              "kind": "wolf",
+              "count": 4
+            },
+            {
+              "kind": "bat",
+              "count": 3
+            }
+          ],
           "delay": 1.8
         },
         {
-          "kind": "wolf",
-          "count": 7,
-          "delay": 2.2,
+          "groups": [
+            {
+              "kind": "wolf",
+              "count": 7
+            }
+          ],
+          "delay": 3.2,
           "overlap": true
         },
         {
-          "kind": "boar",
-          "count": 5,
-          "delay": 2.4,
+          "groups": [
+            {
+              "kind": "boar",
+              "count": 5
+            }
+          ],
+          "delay": 3.2,
           "overlap": true
         },
         {
-          "kind": "wolf",
-          "count": 8,
-          "delay": 2.6,
+          "groups": [
+            {
+              "kind": "wolf",
+              "count": 6
+            },
+            {
+              "kind": "bat",
+              "count": 3
+            }
+          ],
+          "delay": 3.2,
           "overlap": true
         }
       ]

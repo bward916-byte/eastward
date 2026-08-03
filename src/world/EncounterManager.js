@@ -11,6 +11,7 @@ import { journal } from '../core/Journal.js';
 import { clamp } from '../core/utils.js';
 import { Creature } from '../entities/Creature.js';
 
+const UNREACHABLE_R = 1400;   // beyond this a straggler cannot hold a barrier
 const APPROACH_R = 380;
 const PUSH_TIME = 2.4;      // seconds of pushing to clear the fallen tree
 const PUSH_DRAIN = 13;      // stamina/s while pushing
@@ -40,6 +41,33 @@ export class EncounterManager {
     this.creatures = [];
     this.onClassChosen = null;   // main provides (classId) => void
     this.onBranchChosen = null;  // main provides (biomeId) => void (§C multi-path)
+  }
+
+
+  /**
+   * Can the player still meaningfully fight this pack?
+   *
+   * A barrier must NEVER hold on something the player cannot resolve. Two ways
+   * that happens:
+   *   - capability: bats are targetableBy ['air'] and a Fighter targets
+   *     ['ground'] only, so a Fighter can never kill one. Every standalone bat
+   *     encounter is authored `blocking: false` for exactly this reason, but
+   *     hordes always block, and several have bat waves — a Fighter stood at
+   *     the barrier with nothing it could hit.
+   *   - reach: later horde waves spawn a third of their number BEHIND the
+   *     player. Run east and one can be left far up the road, alive, holding
+   *     a barrier that has nothing near it.
+   *
+   * Anything still alive but unfightable stops counting: it becomes a harasser
+   * and the road opens. Passage is never the thing on the line.
+   */
+  _packBlocks(pack) {
+    const alive = (pack ?? []).filter(c => !c.dead);
+    if (!alive.length) return false;
+    const caps = this.player.classDef?.targets ?? ['ground', 'air'];
+    return alive.some(c =>
+      c.targetableBy.some(t => caps.includes(t) || t === 'melee')
+      && Math.abs(c.x - this.player.x) < UNREACHABLE_R);
   }
 
   getFlags() { return this.encounters.filter(e => e.resolved).map(e => e.id); }
@@ -80,10 +108,13 @@ export class EncounterManager {
             this.creatures.push(c);
           }
         }
-        if (e.spawned && e.pack.every(c => c.dead)) {
-          e.resolved = true;
-          e.sparkle = 1;
-          bus.emit('challengePassed', { id: e.id });
+        if (e.spawned && !this._packBlocks(e.pack)) {
+          // cleared, or what remains cannot be fought — either way, pass
+          if (!e.resolved) {
+            e.resolved = true;
+            e.sparkle = 1;
+            bus.emit('challengePassed', { id: e.id });
+          }
         }
         if (!e.resolved && dist > 0 && e.blocking !== false) maxX = Math.min(maxX, e.x - 42);
         e._showAttackHint = e.spawned && !e.resolved && Math.abs(dist) < 320;
@@ -105,7 +136,10 @@ export class EncounterManager {
           bus.emit('hordeStarted', { id: e.id, waves: waves.length });
         }
         if (e.started && !e.resolved) {
-          const cleared = e.pack.every(c => c.dead);
+          // "cleared" for wave purposes means nothing fightable is left —
+          // otherwise an untargetable bat or a straggler far behind stalls the
+          // whole horde permanently
+          const cleared = !this._packBlocks(e.pack);
           const next = waves[e.wave + 1];
           // A wave normally waits for the previous to fall. Waves flagged
           // `overlap` spawn on their timer regardless — that is what lets a
@@ -130,18 +164,28 @@ export class EncounterManager {
               }
             } else {
               const w = waves[e.wave];
-              const n = w.count ?? 1;
-              for (let i = 0; i < n; i++) {
-                // wave 0 ahead only; later waves flank from behind too
-                const behind = e.wave > 0 && i % 3 === 2;
-                const sx = behind ? p.x - 300 - (i * 40) : e.x + 60 + i * 52;
-                const c = new Creature(w.kind ?? 'wolf', sx, this.terrain);
-                e.pack.push(c);
-                this.creatures.push(c);
+              // A wave is one or more groups. Mixed waves matter: bats are
+              // targetableBy ['air'] and a Fighter targets ['ground'] only, so
+              // an all-bat wave is empty content for that class. Every wave
+              // should carry something every class can fight.
+              const groups = w.groups ?? [{ kind: w.kind ?? 'wolf', count: w.count ?? 1 }];
+              let i = 0;
+              for (const g of groups) {
+                for (let k = 0; k < (g.count ?? 1); k++, i++) {
+                  // wave 0 ahead only; later waves flank from behind too
+                  const behind = e.wave > 0 && i % 3 === 2;
+                  const sx = behind ? p.x - 300 - (i * 40) : e.x + 60 + i * 52;
+                  const c = new Creature(g.kind ?? 'wolf', sx, this.terrain);
+                  e.pack.push(c);
+                  this.creatures.push(c);
+                }
               }
               e.waveGap = w.delay ?? 1.6;
               bus.emit('hordeWave', {
-                id: e.id, wave: e.wave + 1, of: waves.length, count: n, kind: w.kind ?? 'wolf',
+                id: e.id, wave: e.wave + 1, of: waves.length,
+                count: i,
+                kind: groups.length === 1 ? (groups[0].kind ?? 'wolf') : 'mixed',
+                groups: groups.map(g => ({ kind: g.kind, count: g.count })),
               });
             }
           }

@@ -599,9 +599,12 @@ async function boot() {
     hordeBanner.classList.remove('gone');
     hordeHideAt = performance.now() + ms;
   }
-  bus.on('hordeWave', ({ wave, of, count, kind }) => {
-    const noun = count > 1 ? `${kind}s` : kind;
-    showHorde(`Wave ${wave} of ${of} — ${count} ${noun}`);
+  bus.on('hordeWave', ({ wave, of, count, kind, groups }) => {
+    const describe = (g) => `${g.count} ${g.count > 1 ? g.kind + 's' : g.kind}`;
+    const what = groups && groups.length > 1
+      ? groups.map(describe).join(' and ')
+      : `${count} ${count > 1 ? kind + 's' : kind}`;
+    showHorde(`Wave ${wave} of ${of} — ${what}`);
   });
   bus.on('hordeCleared', () => {
     journal.mark('hordes_cleared', Number(journal.get('hordes_cleared', 0)) + 1);

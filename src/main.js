@@ -441,9 +441,11 @@ async function boot() {
       if (player.climbHint && !dialogue.blocking) {
         const hx = player.x, hy = player.y - 104;
         ctx.font = '13px "Trebuchet MS", sans-serif';
-        const label = usingTouch
-          ? 'Too steep to walk — hold the jump side to climb'
-          : 'Too steep to walk — hold ↑ with the direction to climb';
+        const label = player.climbHint === 2
+          ? 'Too spent to climb — rest a moment'
+          : usingTouch
+            ? 'Too steep to walk — hold the jump side to climb'
+            : 'Too steep to walk — hold ↑ with the direction to climb';
         const w = ctx.measureText(label).width + 18;
         ctx.fillStyle = 'rgba(12, 16, 10, 0.62)';
         ctx.beginPath(); ctx.roundRect(hx - w / 2, hy - 13, w, 22, 10); ctx.fill();

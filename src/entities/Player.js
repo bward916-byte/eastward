@@ -28,6 +28,13 @@ const AIR_CONTROL = 0.45;
 // --- climbing / slopes (§3.3) --------------------------------------------
 const CLIMB_SPEED = 70;        // along-surface px/s at skill 1, easiest angle
 const CLIMB_DRAIN = 5.5;       // stamina/s, scaled up with angle
+// Entering a climb you have no hope of finishing is a trap: you drain to zero
+// partway up, slip, slide back to the foot, and repeat forever. A flat entry
+// threshold does not fix it — the meadow face costs 40 stamina, so any fixed
+// number below that still admits a doomed attempt. The gate is computed from
+// the actual face ahead instead (see _climbCostAhead).
+const CLIMB_ENTRY_MARGIN = 1.12;   // need a little more than the bare cost
+const CLIMB_ENTRY_FLOOR = 12;      // ...and never trivially little
 const SCRAMBLE_DRAIN = 8;      // stamina/s while pushing uphill on scramble
 const SLIDE_ACCEL = 620;
 const SLIDE_MAX = 280;
@@ -64,7 +71,7 @@ export class Player {
     this.fatigueTimer = 0;
     this.pinnedByFace = false;
     this._climbDir = 0;
-    this.climbHint = false;
+    this.climbHint = 0;
     this.staggerTimer = 0;
     this._jumpHoldTime = 0;
     this._leaveGroundY = groundY;
@@ -198,6 +205,33 @@ export class Player {
   }
   get exhausted() { return this.state === 'EXHAUSTED'; }
 
+  /**
+   * Stamina this climb will actually cost, by walking the contiguous climb-tier
+   * run ahead and integrating the same drain the CLIMB branch applies. Sampled
+   * every 4px — fine enough for a cost estimate, cheap enough to run per frame
+   * while standing at a face.
+   */
+  _climbCostAhead(terrain, x, dir) {
+    let cost = 0, cx = x, steps = 0;
+    while (steps++ < 220) {
+      const tier = terrain.tierAt(cx);
+      if (steps > 2 && tier !== 'climb') break;
+      const a = Math.abs(terrain.slopeAt(cx));
+      const grade = clamp((a - CLIMB_MIN) / (Math.PI / 2 - CLIMB_MIN), 0, 1);
+      const hspeed = CLIMB_SPEED * this.climbSkill * (1 - grade * 0.45) * Math.cos(a);
+      if (hspeed <= 1) break;
+      cost += CLIMB_DRAIN * (0.6 + grade) / this.climbSkill * (4 / hspeed);
+      cx += dir * 4;
+    }
+    return cost;
+  }
+
+  /** Stamina required to be allowed to start the climb ahead. */
+  climbEntryCost(terrain, dir) {
+    const raw = this._climbCostAhead(terrain, this.x, dir) * CLIMB_ENTRY_MARGIN;
+    return Math.max(CLIMB_ENTRY_FLOOR, Math.min(raw, this.staminaCeiling * 0.98));
+  }
+
   update(dt, input, terrain) {
     this.prevX = this.x; this.prevY = this.y;
 
@@ -225,7 +259,10 @@ export class Player {
       && wantDir === this.facing
       && terrain.slopeAt(this.x + this.facing * 14) * this.facing > 0;
     // surfaced for the HUD prompt — the climb input is otherwise undiscoverable
-    this.climbHint = this.pinnedByFace && !input.jumpHeld;
+    // 0 = none, 1 = needs the climb input, 2 = knows how but is too spent
+    this.climbHint = !this.pinnedByFace ? 0
+      : (this.stamina < this.climbEntryCost(terrain, this.facing)
+          ? 2 : (input.jumpHeld ? 0 : 1));
 
     // ---- state resolution ----
     if (this.staggerTimer > 0) {
@@ -245,7 +282,9 @@ export class Player {
       else if (!holding || this.stamina <= 0.01) this.state = 'SLIDE'; // slip (§3.3)
     } else if (tierHere === 'climb') {
       const wantClimb = input.jumpHeld && wantDir === ascendDir;
-      if (wantClimb && this.stamina > 1) { this.state = 'CLIMB'; this._climbDir = ascendDir; }
+      if (wantClimb && this.stamina >= this.climbEntryCost(terrain, ascendDir)) {
+        this.state = 'CLIMB'; this._climbDir = ascendDir;
+      }
       else this.state = 'SLIDE';
     } else if (this.state === 'SLIDE') {
       this.state = 'WALK';                                   // slid onto safe ground
@@ -267,7 +306,8 @@ export class Player {
     if ((this.state === 'WALK' || this.state === 'RUN' || this.state === 'IDLE')
         && tierAhead === 'climb' && this.grounded) {
       const faceAscends = terrain.slopeAt(this.x + this.facing * 14) * this.facing > 0;
-      if (faceAscends && input.jumpHeld && wantDir === this.facing && this.stamina > 1) {
+      if (faceAscends && input.jumpHeld && wantDir === this.facing
+          && this.stamina >= this.climbEntryCost(terrain, this.facing)) {
         this.state = 'CLIMB';
         this._climbDir = this.facing;   // latch: the FACE decides, not the dip
       }
@@ -381,13 +421,16 @@ export class Player {
       this.stamina -= RUN_DRAIN * dt;
       this.endurance = clamp(this.endurance - ENDURANCE_DRAIN * dt, 0, ENDURANCE_MAX);
     } else if (this.state === 'WALK' || this.state === 'IDLE'
-               || this.state === 'EXHAUSTED') {
+               || this.state === 'EXHAUSTED' || this.state === 'SLIDE') {
       let regen = STAMINA_REGEN * this._rig.regenMult;      // age curve (§5)
       if (this.hasInjury('bruise')) regen *= 0.6;           // §12
       // EXHAUSTED recovers, slowly. It previously regenerated NOTHING, which
       // made it an absorbing state: once stamina and endurance both hit zero
       // the journey could not continue even by standing still indefinitely.
       if (this.state === 'EXHAUSTED') regen *= 0.35;
+      // sliding down is not exertion — recovering here is what lets a player
+      // who mistimed a climb try again instead of looping at the foot of it
+      if (this.state === 'SLIDE') regen *= 0.5;
       this.stamina += regen * dt;
       if (this.state === 'IDLE' || this.state === 'EXHAUSTED') {
         // endurance is the ceiling on stamina, so it must climb back too or

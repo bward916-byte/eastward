@@ -62,7 +62,7 @@ for (let x = 300; x < 4000; x += 10) {
   check('pinned at a face keeps stamina', p.stamina > 50, `stamina ${p.stamina.toFixed(1)}`);
   check('pinned at a face keeps endurance', p.endurance > 95, `endurance ${p.endurance.toFixed(1)}`);
   check('pinned player can still start a climb', p.stamina > 1);
-  check('climb hint is shown', p.climbHint === true);
+  check('climb hint asks for the climb input', p.climbHint === 1, `hint ${p.climbHint}`);
 }
 
 // --- 2. holding Up at the face still climbs ---------------------------------
@@ -70,7 +70,7 @@ for (let x = 300; x < 4000; x += 10) {
   const { p, seen } = sim(high, face - 60, 30, (inp) => { inp.moveDir = 1; inp.jumpHeld = true; });
   check('holding Up climbs the face', seen.has('CLIMB'));
   check('climb makes real progress east', p.x > face + 200, `x ${p.x.toFixed(0)}`);
-  check('climb hint hidden while climbing', p.climbHint === false);
+  check('climb hint hidden while climbing', p.climbHint === 0, `hint ${p.climbHint}`);
 }
 
 // --- 3. running on open ground is unaffected --------------------------------
@@ -91,6 +91,37 @@ for (let x = 300; x < 4000; x += 10) {
   check('EXHAUSTED recovers by resting', p.stamina > 1 && p.endurance > 1,
     `stamina ${p.stamina.toFixed(1)}, endurance ${p.endurance.toFixed(1)}`);
   check('EXHAUSTED is not an absorbing state', p.state !== 'EXHAUSTED', `state ${p.state}`);
+}
+
+// --- 4b. a tired player must not be admitted to a climb they cannot finish --
+{
+  const p = new Player(face - 60, high);
+  p.y = high.groundYAt(p.x); p.prevX = p.x; p.prevY = p.y;
+  const cost = p.climbEntryCost(high, 1);
+  check('climb entry cost is computed from the face', cost > 0, `cost ${cost.toFixed(1)}`);
+  p.stamina = Math.max(0, cost - 5);          // just short
+  const inp = mkInput({ moveDir: 1, jumpHeld: true, holdDuration: 1 });
+  // The invariant is per-frame, not per-run: standing there regenerates, so of
+  // course the climb starts eventually — that is the intended recovery. What
+  // must never happen is entering CLIMB on a frame where stamina < cost.
+  let violations = 0, sawTooTired = false;
+  for (let i = 0; i < 120 * 4; i++) {
+    const before = p.stamina;
+    const wasClimbing = p.state === 'CLIMB';
+    const need = p.climbEntryCost(high, 1);
+    if (before < need) sawTooTired = true;
+    p.update(1 / 120, inp, high);
+    // only ENTRY is gated — an in-progress climb is allowed to run the tank
+    // down and slip, which is the intended failure mode
+    if (!wasClimbing && p.state === 'CLIMB' && before < need) violations++;
+  }
+  check('never ENTERS a climb it cannot afford', violations === 0, `${violations} entry(s)`);
+  check('the too-tired state was actually exercised', sawTooTired);
+  // and resting must actually resolve it
+  const idle = mkInput();
+  for (let i = 0; i < 120 * 20; i++) p.update(1 / 120, idle, high);
+  const after = sim(high, p.x, 25, (inp2) => { inp2.moveDir = 1; inp2.jumpHeld = true; });
+  check('after resting the same face is climbable', after.seen.has('CLIMB'));
 }
 
 // --- 5. no free-roam biome strands a walker at a face it cannot pass -------
